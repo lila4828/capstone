@@ -112,8 +112,8 @@ async def cafe_save(cafe_info: CafeInfo):
             "lon": cafe_info.cafeLon  # 경도
         },
         "cafeImg": [{"number": img.number, "img": img.imgAddress} for img in cafe_info.cafeImg],
-        "review": [{"number": review.number, "text": review.text, "img": review.imgAddress} for review in cafe_info.review],
-        "cafeTag": cafe_info.cafeTag
+        "review": [],
+        "cafeTag": []
     }
     # Elasticsearch에 문서 색인
     res = es.index(index='cafe', body=cafe_document)
@@ -130,17 +130,27 @@ async def add_reviews(cafe_number: int, reviews: List[Review]):
     # 카페 번호에 해당하는 문서의 ID 가져오기
     cafe_id = cafe_document['hits']['hits'][0]['_id']
 
-    # 기존 리뷰를 가져와서 새로운 리뷰 추가
-    existing_reviews = cafe_document['hits']['hits'][0]['_source'].get('review', [])
-    existing_reviews.extend(reviews)
+    for review in reviews:
+        script = {
+            "script": {
+                "source": "ctx._source.review.add(params.review)",
+                "params": {
+                    "review": {
+                        "number": review.number,
+                        "text": review.text,
+                        "img": review.imgAddress
+                    }
+                }
+            }
+        }
 
-    # Elasticsearch에 업데이트된 리뷰를 저장
-    res = es.update(index='cafe', id=cafe_id, body={"doc": {"review": existing_reviews}})
+        # Elasticsearch의 _update API를 사용하여 리뷰 추가
+        res = es.update(index='cafe', id=cafe_id, body=script)
     
     return res
                
 @app.post("/cafes/{cafe_number}/tags/")             # 형용사를 추가한다. - input : 카페 번호, 형용사 리스트
-async def add_tags(cafe_number: int, tags: List[str]):
+async def add_tags(cafe_number: int, tag: List[str]):
     # 카페 번호를 기준으로 해당 카페의 문서를 Elasticsearch에서 가져옴
     cafe_document = es.search(index='cafe', body={"query": {"match": {"cafeNumber": cafe_number}}})
     if not cafe_document['hits']['hits']:
@@ -149,13 +159,18 @@ async def add_tags(cafe_number: int, tags: List[str]):
     # 카페 번호에 해당하는 문서의 ID 가져오기
     cafe_id = cafe_document['hits']['hits'][0]['_id']
 
-    # 기존 태그를 가져와서 새로운 태그 추가
-    existing_tags = cafe_document['hits']['hits'][0]['_source'].get('cafeTag', [])
-    existing_tags.extend([tag.tag for tag in tags])
+    # 형용사를 추가하는 스크립트 준비
+    script = {
+        "script": {
+            "source": "ctx._source.cafeTag.add(params.cafeTag)",
+            "params": {
+            "cafeTag": tag
+            }
+        }
+    }
 
-    # Elasticsearch에 업데이트된 태그를 저장
-    res = es.update(index='cafe', id=cafe_id, body={"doc": {"cafeTag": existing_tags}})
-    
+    # Elasticsearch의 _update API를 사용하여 태그 추가
+    res = es.update(index='cafe', id=cafe_id, body=script)
     return res
 
 if __name__ == "__main__":
