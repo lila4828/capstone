@@ -28,16 +28,18 @@ class CafeImage(BaseModel):
 class Review(BaseModel):
     number: int
     text: Optional[str] = ""
-    imgAddress: Optional[str] = ""  
+    imgAddress: Optional[str] = ""
 
 class CafeInfo(BaseModel):      # 카페 입력 데이터
-    cafeNumber: int
-    cafeName: str
-    cafeLat: float  # 위도
-    cafeLon: float  # 경도
-    cafeImg: Optional[List[CafeImage]] = []
-    review: Optional[List[Review]] = []
-    cafeTag: Optional[List[str]] = []
+    cafeNumber: int                             # 카페 번호
+    cafeName: str                               # 카페 이름
+    cafeUrl: str                                # 카페 URL
+    cafeAddress: str                            # 카페 도로명 주소
+    cafeLat: float                              # 위도
+    cafeLon: float                              # 경도
+    cafeImg: Optional[List[CafeImage]] = []     # 카페 전경 이미지들
+    review: Optional[List[Review]] = []         # 리뷰 리스트들
+    cafeTag: Optional[List[str]] = []           # 형용사들
 
 @app.get("/get_cafe_info/")         # 카페 정보를 가져온다. - input : 카페 번호
 async def get_cafe_info(cafeNum: int):
@@ -89,7 +91,7 @@ async def get_cafe_uear(search:str):
                                  ])
     return res
 
-@app.get("/get_cafe_images/{cafe_number}/")          # 카페 이미지를 가져온다. - input : 카페 번호
+@app.get("/get_cafe_images/")          # 카페 이미지를 가져온다. - input : 카페 번호
 async def get_cafe_images(cafe_number: int):
     # 카페 번호를 기준으로 해당 카페의 문서를 Elasticsearch에서 가져옴
     cafe_document = es.search(index='cafe', body={"query": {"match": {"cafeNumber": cafe_number}}})
@@ -101,26 +103,56 @@ async def get_cafe_images(cafe_number: int):
 
     return cafe_images
 
-@app.post("/cafe_save/")            # 카페 정보를 저장한다. - input : 카페 정보(카페 번호, 이름, 위경도, 이미지 리스트(번호, 이미지), 리뷰 리스트(빈칸), 형용사 리스트(빈칸))
+@app.post("/cafe_save/")            # 카페 정보를 저장한다. - input : 카페 정보(카페 번호, 이름, 주소, URL, 위경도, 이미지 리스트(번호, 이미지), 리뷰 리스트(빈칸), 형용사 리스트(빈칸))
 async def cafe_save(cafe_info: CafeInfo):
     # Elasticsearch에 저장할 문서 생성
     cafe_document = {
         "cafeNumber": cafe_info.cafeNumber,
         "cafeName": cafe_info.cafeName,
+        "cafeUrl": cafe_info.cafeUrl,
+        "cafeAddress": cafe_info.cafeAddress,
         "cafePoint": {
             "lat": cafe_info.cafeLat,  # 위도
             "lon": cafe_info.cafeLon  # 경도
         },
         "cafeImg": [{"number": img.number, "img": img.imgAddress} for img in cafe_info.cafeImg],
-        "review": [],
-        "cafeTag": []
+        "review": [{"number": review.number, "text":review.text, "img": review.imgAddress} for review in cafe_info.review],
+        "cafeTag": [cafe_info.cafeTag]
     }
     # Elasticsearch에 문서 색인
     res = es.index(index='cafe', body=cafe_document)
 
     return res
 
-@app.post("/cafe/{cafe_number}/reviews/")      # 리뷰 리스트를 추가한다. - input : 카페 번호, 리뷰 리스트(번호, 내용, 이미지)
+@app.post("/cafe/images/{cafe_number}")    # 카페 이미지를 추가한다 - input : 카페 번호, 이미지 리스트(이미지 번호, 이미지주소)
+async def add_cafe_images(cafe_number: int, cafe_images: List[CafeImage]):
+    # 카페 번호를 기준으로 해당 카페의 문서를 Elasticsearch에서 가져옴
+    cafe_document = es.search(index='cafe', body={"query": {"match": {"cafeNumber": cafe_number}}})
+    if not cafe_document['hits']['hits']:
+        raise HTTPException(status_code=404, detail="카페가 존재하지 않습니다.")
+
+    # 카페 번호에 해당하는 문서의 ID 가져오기
+    cafe_id = cafe_document['hits']['hits'][0]['_id']
+
+    for imgs in cafe_images:
+        script = {
+            "script": {
+                "source": "ctx._source.cafeImg.add(params.img)",
+                "params": {
+                    "img": {
+                        "number": imgs.number,
+                        "img": imgs.imgAddress
+                    }
+                }
+            }
+        }
+
+        # Elasticsearch의 _update API를 사용하여 리뷰 추가
+        res = es.update(index='cafe', id=cafe_id, body=script)
+    
+    return res
+
+@app.post("/cafe/reviews/{cafe_number}")      # 리뷰 리스트를 추가한다. - input : 카페 번호, 리뷰 리스트(번호, 내용, 이미지주소)
 async def add_reviews(cafe_number: int, reviews: List[Review]):
     # 카페 번호를 기준으로 해당 카페의 문서를 Elasticsearch에서 가져옴
     cafe_document = es.search(index='cafe', body={"query": {"match": {"cafeNumber": cafe_number}}})
@@ -149,7 +181,7 @@ async def add_reviews(cafe_number: int, reviews: List[Review]):
     
     return res
                
-@app.post("/cafes/{cafe_number}/tags/")             # 형용사를 추가한다. - input : 카페 번호, 형용사 리스트
+@app.post("/cafes/tags/{cafe_number}")             # 형용사를 추가한다. - input : 카페 번호, 형용사 리스트
 async def add_tags(cafe_number: int, tag: List[str]):
     # 카페 번호를 기준으로 해당 카페의 문서를 Elasticsearch에서 가져옴
     cafe_document = es.search(index='cafe', body={"query": {"match": {"cafeNumber": cafe_number}}})
@@ -164,7 +196,7 @@ async def add_tags(cafe_number: int, tag: List[str]):
         "script": {
             "source": "ctx._source.cafeTag.add(params.cafeTag)",
             "params": {
-            "cafeTag": tag
+                "cafeTag": tag
             }
         }
     }
