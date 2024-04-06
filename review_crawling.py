@@ -111,7 +111,7 @@ try:
 
                 time.sleep(0.06)
 
-                list_sheet.append([value, nickName, nameImgPath, date, revisit, reviewImgPath])       # 저장하는 부분이 이상해서 파일에 저장이 안됨 
+                list_sheet.append([value, nickName, nameImgPath, date, revisit, reviewImgPath]) 
                 time.sleep(0.06)
             
         except Exception as e:
