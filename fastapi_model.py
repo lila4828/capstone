@@ -27,8 +27,11 @@ class CafeImage(BaseModel):
 
 class Review(BaseModel):
     number: int
+    user: str
+    userImg: str
     text: Optional[str] = ""
     imgAddress: Optional[str] = ""
+    date: str
 
 class CafeInfo(BaseModel):      # 카페 입력 데이터
     cafeNumber: int                             # 카페 번호
@@ -162,6 +165,8 @@ async def add_reviews(cafe_number: int, reviews: List[Review]):
     # 카페 번호에 해당하는 문서의 ID 가져오기
     cafe_id = cafe_document['hits']['hits'][0]['_id']
 
+    res = []  # 결과를 저장할 리스트 변수 초기화
+
     for review in reviews:
         script = {
             "script": {
@@ -169,15 +174,19 @@ async def add_reviews(cafe_number: int, reviews: List[Review]):
                 "params": {
                     "review": {
                         "number": review.number,
+                        "user":review.user,
+                        "userImg":review.userImg,
                         "text": review.text,
-                        "img": review.imgAddress
+                        "img": review.imgAddress,
+                        "date":review.date
                     }
                 }
             }
         }
 
         # Elasticsearch의 _update API를 사용하여 리뷰 추가
-        res = es.update(index='cafe', id=cafe_id, body=script)
+        result = await es.update(index='cafe', id=cafe_id, body=script)
+        res.append(result)  # 결과를 리스트에 추가
     
     return res
                
@@ -191,6 +200,8 @@ async def add_tags(cafe_number: int, tag: List[str]):
     # 카페 번호에 해당하는 문서의 ID 가져오기
     cafe_id = cafe_document['hits']['hits'][0]['_id']
 
+    res = []
+
     # 형용사를 추가하는 스크립트 준비
     script = {
         "script": {
@@ -202,7 +213,8 @@ async def add_tags(cafe_number: int, tag: List[str]):
     }
 
     # Elasticsearch의 _update API를 사용하여 태그 추가
-    res = es.update(index='cafe', id=cafe_id, body=script)
+    result = await es.update(index='cafe', id=cafe_id, body=script)
+    res.append(result)  # 결과를 리스트에 추가
     return res
 
 if __name__ == "__main__":
