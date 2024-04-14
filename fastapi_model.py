@@ -61,6 +61,23 @@ async def get_cafe_info(cafeNum: int):
                                  ])
     return res
 
+@app.get("/get_cafe_list/")         # 처음 들어가는 25개의 카페 정보를 가져온다.
+async def get_cafe_info():
+
+    query_dsl = {"bool": {"must": [{"match_all": {}}] }}
+
+    res = es.search(index="cafe", query=query_dsl, size=25,
+                    filter_path=["hits.total,hits.hits._score",
+                                 "hits.hits._source.cafeNumber",    # 카페 번호
+                                 "hits.hits._source.cafeName",      # 카페 이름
+                                 "hits.hits._source.cafeTag",       # 카페 태그
+                                 "hits.hits._source.cafeAddress",   # 카페 주소(도로명)
+                                 "hits.hits._source.cafeUrl",       # 카페 URL
+                                 "hits.hits._source.cafeImg",       # 카페 이미지 주소들
+                                 "hits.hits._source.review"         # 카페 리뷰들
+                                 ])
+    return res
+
 @app.get("/get_cafe_point/")      # 주변 카페 정보(카페 번호, 카페 이름)를 가져온다.  - intput 위도(lat), 경도(lon)
 async def get_cafe_point(lat: float, lon: float):
     query_dsl = { "bool": {
