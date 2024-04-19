@@ -55,6 +55,7 @@ async def get_cafe_info(cafeNum: int):
                                  "hits.hits._source.cafeName",      # 카페 이름
                                  "hits.hits._source.cafeTag",       # 카페 태그
                                  "hits.hits._source.cafeAddress",   # 카페 주소(도로명)
+                                 "hits.hits._source.cafePoint",     # 위경도
                                  "hits.hits._source.cafeUrl",       # 카페 URL
                                  "hits.hits._source.cafeImg",       # 카페 이미지 주소들
                                  "hits.hits._source.review"         # 카페 리뷰들
