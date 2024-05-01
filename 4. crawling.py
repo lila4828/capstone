@@ -337,5 +337,6 @@ def review() :
 
     print("파일 변환이 끝났습니다.")
 
+cafe()
 img()
 review()
