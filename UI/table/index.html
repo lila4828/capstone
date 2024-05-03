@@ -1,0 +1,224 @@
+
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="/table/css/styles.css">
+    <title>카페인 - 카페탐방 서비스</title>
+    <link href="https://fonts.googleapis.com/css?family=Montserrat:400,700" rel="stylesheet" type="text/css" />
+    <link href="https://fonts.googleapis.com/css?family=Roboto+Slab:400,100,300,700" rel="stylesheet" type="text/css" />
+    <!-- Core theme CSS (includes Bootstrap)-->
+    <link href="https://fonts.googleapis.com/css?family=Lato&display=swap" rel="stylesheet">
+    <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=46860540331b1c24c3c119008a5c34c4"></script>
+</head>
+<body>
+<div class="navbar">
+    CAFE-IN
+</div>
+<div class="m-p-g">
+    <div class="m-p-g__thumbs" id="cafeList">
+        <div class="image">
+            <img src="https://search.pstatic.net/common/?autoRotate=true&amp;type=w560_sharpen&amp;src=http%3A%2F%2Fblogfiles.naver.net%2FMjAyMzExMTBfODEg%2FMDAxNjk5NjIyMzA0Nzk5.JaBHwb2N9_YJCPkYZ803CexRG0-qxJGXCmXKE2MW-xgg.ZpbJZXRJXy94QKyXrTzEZIfqsjNRXbXCqxbrQYtwMgUg.JPEG.dddddkssud%2FIMG_3638.jpg" data-full="https://search.pstatic.net/common/?autoRotate=true&amp;type=w560_sharpen&amp;src=http%3A%2F%2Fblogfiles.naver.net%2FMjAyMzExMTBfODEg%2FMDAxNjk5NjIyMzA0Nzk5.JaBHwb2N9_YJCPkYZ803CexRG0-qxJGXCmXKE2MW-xgg.ZpbJZXRJXy94QKyXrTzEZIfqsjNRXbXCqxbrQYtwMgUg.JPEG.dddddkssud%2FIMG_3638.jpg" id="1004947667" class="m-p-g__thumbs-img layout-completed" data-height="747" data-width="560" style="width: 253.888px; height: 338.668px;">
+            <figcaption>비건베이커리 쿠비쿠비</figcaption>
+        </div>
+    </div>
+</div>
+<div class="overlay" id="overlay">
+    <div class="image-container">
+        <button id="prev-btn" class="prev-btn">&#10094;</button>
+        <img class="imageL" id="imageL" src="" alt="카페 이미지">
+        <button id="next-btn" class="next-btn">&#10095;</button>
+    </div>
+    <div class="expanded-info" id="expanded-info">
+        <div class="map" id="map" style="width:500px;height:300px;"></div>
+        <h2 id="cafeName"></h2>
+        <p id="cafeAddress"></p>
+        <a id="cafeUrl" target="_blank"></a>
+        <div class="rep" id="rep"></div>
+    </div>
+    <span class="close-btn" id="close-btn">X</span>
+    <div class="image-thumbnails" id="image-thumbnails"></div>
+</div>
+<script>
+    var elem = document.querySelector('.m-p-g');
+    let cafes;
+    // API 엔드포인트
+    const apiUrl = 'http://localhost:8000/get_cafe_list/';
+
+    // API에서 데이터를 가져와서 HTML로 출력하는 함수
+    async function fetchCafes() {
+        try {
+            // API 호출
+            const response = await fetch(apiUrl);
+            const data = await response.json();
+
+            // 카페 목록을 가져옴
+            cafes = data.hits.hits;
+
+            // 가져온 데이터를 HTML로 변환하여 출력
+            const cafeListElement = document.getElementById('cafeList');
+
+            cafes.forEach(cafe => {
+                const cafeData = cafe._source;
+                const divItem = document.createElement('div');
+                divItem.classList.add('image');
+
+                // 새로운 이미지 객체 생성
+                const img = new Image();
+
+                // 이미지가 로드되었을 때의 이벤트 핸들러
+                img.onload = function() {
+                    // 이미지의 높이와 너비 가져오기
+                    const imgHeight = this.naturalHeight;
+                    const imgWidth = this.naturalWidth;
+
+                    // 이미지 및 관련 정보 추가
+                    divItem.innerHTML = `
+            <img src="${cafeData.cafeImg[0].img}" data-full="${cafeData.cafeImg[0].img}" id="${cafeData.cafeNumber}">
+            <figcaption>${cafeData.cafeName}</figcaption>
+            <!--p><strong>Address:</strong> ${cafeData.cafeAddress}</p>
+            <p><strong>URL:</strong> <a href="${cafeData.cafeUrl}" target="_blank">${cafeData.cafeUrl}</a><--/p>
+        `;
+
+                    // 생성한 요소를 DOM에 추가
+                    cafeListElement.appendChild(divItem);
+                    // 썸네일 이미지를 추가
+
+                };
+
+                // 이미지의 URL 설정하여 로드 시작
+                img.src = cafeData.cafeImg[0].img;
+            });
+
+        } catch (error) {
+            console.error('Error fetching cafe list:', error);
+        }
+    }
+    // 페이지 로드 시 API 호출
+    fetchCafes();
+</script>
+<script>
+    let currentImageIndex = 0;
+    console.log("뜌땨?");
+    // 부모 요소인 .m-p-g__thumbs에서 클릭 이벤트를 감지하여 이미지 클릭 시 동작하도록 함
+    document.getElementById('cafeList').addEventListener('click', function(event) {
+        // 클릭한 요소가 이미지인지 확인하고 하위 요소 중에 image 클래스가 있는지 확인
+        const imageElement = event.target.closest('.image');
+        console.log("뜌땨뜌");
+        if (imageElement) {
+            // 클릭한 이미지에 클래스 추가
+            imageElement.classList.add('image');
+            // 클릭한 이미지의 id 가져오기
+            const imageId = imageElement.querySelector('img').id;
+            fetchInfo(imageId);
+            console.log("뜌땨뜌땨"+imageId);
+
+            // API에 검색 요청 보내기 (가정)
+            // 여기서는 간단히 이미지 id를 확장된 정보로 출력하는 것으로 대체합니다.
+
+            // 확장된 정보를 표시하는 div 보이기
+            document.getElementById('overlay').style.display = 'block';
+            document.querySelector('.expanded-info').style.display = 'block';
+        }
+    });
+    //상세보기 나가기
+    document.getElementById('close-btn').addEventListener('click', function() {
+        document.getElementById('overlay').style.display = 'none';
+        document.querySelector('.expanded-info').style.display = 'none';
+        document.getElementById('image-thumbnails').innerHTML = '';
+        currentImageIndex = 0;
+        console.log("뜌땨야!");
+    });
+    function fetchInfo(imageId) {
+        fetch(`http://localhost:8000/get_cafe_info/?cafeNum=${imageId}`)
+            .then(response => response.json())
+            .then(data => {
+                const imageThumbnailsElement = document.getElementById('image-thumbnails'); // 새로운 요소 추가
+                const cafeInfo = data.hits.hits[0]._source;
+                document.getElementById('cafeName').textContent = cafeInfo.cafeName;
+                document.getElementById('cafeAddress').textContent = cafeInfo.cafeAddress;
+                document.getElementById('cafeUrl').textContent = '링크: ' + cafeInfo.cafeUrl;
+                document.getElementById('cafeUrl').href = cafeInfo.cafeUrl;
+
+                cafeInfo.cafeImg.forEach((image, index) => {
+                    const thumbnailImg = new Image();
+                    thumbnailImg.src = image.img;
+                    thumbnailImg.classList.add('thumbnail-image');
+                    thumbnailImg.onclick = function() {
+                        document.getElementById('imageL').src = image.img;
+                        currentImageIndex=index;
+                    };
+                    imageThumbnailsElement.appendChild(thumbnailImg);
+                });
+
+                // 썸네일 이미지들을 출력한 후에 줄 바꿈 요소 추가 (옵션)
+                const lineBreak = document.createElement('br');
+                imageThumbnailsElement.appendChild(lineBreak);
+
+                // 지도에 카페 위치 표시
+                const mapContainer = document.getElementById('map');
+                const mapOptions = {
+                    center: new kakao.maps.LatLng(cafeInfo.cafePoint.lat, cafeInfo.cafePoint.lon),
+                    level: 3
+                };
+                const map = new kakao.maps.Map(mapContainer, mapOptions);
+                var markerPosition = new kakao.maps.LatLng(cafeInfo.cafePoint.lat, cafeInfo.cafePoint.lon);
+
+                // 마커를 생성합니다
+                var marker = new kakao.maps.Marker({
+                    position: markerPosition
+                });
+
+                // 이미지 출력
+                const imageContainer = document.getElementById('imageL');
+                displayImage(imageContainer, cafeInfo.cafeImg);
+
+                // 이전 이미지로 이동하는 이벤트 리스너 추가
+                document.getElementById('prev-btn').onclick = function() {
+                    document.getElementById('image-thumbnails').innerHTML = '';
+                    currentImageIndex = (currentImageIndex - 1 + cafes.length) % cafes.length;
+                    fetchInfo(cafes[currentImageIndex]._source.cafeNumber);
+                };
+
+                // 다음 이미지로 이동하는 이벤트 리스너 추가
+                document.getElementById('next-btn').onclick = function() {
+                    document.getElementById('image-thumbnails').innerHTML = '';
+                    currentImageIndex = (currentImageIndex + 1) % cafes.length;
+                    fetchInfo(cafes[currentImageIndex]._source.cafeNumber);
+                };
+
+                // 마커가 지도 위에 표시되도록 설정합니다
+                marker.setMap(map);
+
+                const reviews = cafeInfo.review; // 리뷰 목록 가져오기
+
+                const repElement = document.getElementById('rep');
+                repElement.innerHTML = ''; // rep 요소 초기화
+
+                // 리뷰를 반복하여 rep 요소에 추가
+                reviews.forEach(review => {
+                    const reviewElement = document.createElement('div');
+                    reviewElement.classList.add('review');
+                    reviewElement.innerHTML = `
+                        <div style="display:flex">
+                            <img class="repuserpic" src="${review.userImg}" alt="User Image">
+                            <div><div class="repname">${review.user}</div><div class="repdate">${review.date}</div></div>
+                        </div>
+                        <img class="repimg" src="${review.img}" alt="Review Image">
+                        <p class="reptext">Text: ${review.text}</p>
+                `;
+                    repElement.appendChild(reviewElement);
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching info:', error);
+            });
+    }
+
+    function displayImage(container, images) {
+        console.log(images[0].img + "ED");
+        container.src = images[0].img;
+    }
+</script>
+</body>
+</html>
