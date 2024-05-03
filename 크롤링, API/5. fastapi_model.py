@@ -44,12 +44,12 @@ class CafeInfo(BaseModel):      # 카페 입력 데이터
     review: Optional[List[Review]] = []         # 리뷰 리스트들
     cafeTag: Optional[List[str]] = []           # 형용사들
 
-@app.get("/get_cafe_info/")         # 카페 정보를 가져온다. - input : 카페 번호
-async def get_cafe_info(cafeNum: int):
+@app.get("/get_cafe_list/")         # 처음 들어가는 25개의 카페 정보를 가져온다.
+async def get_cafe_info():
 
-    query_dsl = {"bool": {"must": [{"match_all": {}}], "filter": [{"match": {"cafeNumber": cafeNum}}]}}
+    query_dsl = {"bool": {"must": [{"match_all": {}}] }}
 
-    res = es.search(index="cafe2", query=query_dsl, size=1,
+    res = es.search(index="cafe2", query=query_dsl, size=25,
                     filter_path=["hits.total,hits.hits._score",
                                  "hits.hits._source.cafeNumber",    # 카페 번호
                                  "hits.hits._source.cafeName",      # 카페 이름
@@ -62,12 +62,13 @@ async def get_cafe_info(cafeNum: int):
                                  ])
     return res
 
-@app.get("/get_cafe_list/")         # 처음 들어가는 25개의 카페 정보를 가져온다.
-async def get_cafe_info():
 
-    query_dsl = {"bool": {"must": [{"match_all": {}}] }}
+@app.get("/get_cafe_info/")         # 카페 정보를 가져온다. - input : 카페 번호
+async def get_cafe_info(cafeNum: int):
 
-    res = es.search(index="cafe2", query=query_dsl, size=25,
+    query_dsl = {"bool": {"must": [{"match_all": {}}], "filter": [{"match": {"cafeNumber": cafeNum}}]}}
+
+    res = es.search(index="cafe2", query=query_dsl, size=1,
                     filter_path=["hits.total,hits.hits._score",
                                  "hits.hits._source.cafeNumber",    # 카페 번호
                                  "hits.hits._source.cafeName",      # 카페 이름
@@ -93,7 +94,7 @@ async def get_cafe_point(lat: float, lon: float):
                                 }
                             } ] } }
 
-    res = es.search(index="cafe2", query=query_dsl, size=10,
+    res = es.search(index="cafe2", query=query_dsl, size=20,
                     filter_path=["hits.total,hits.hits._score",
                                  "hits.hits._source.cafeNumber",    # 카페 번호
                                  "hits.hits._source.cafeName"       # 카페 이름
@@ -105,7 +106,7 @@ async def get_cafe_uear(search:str):
 
     query_dsl = {"match": {"cafeTag": search}}
 
-    res = es.search(index="cafe2", query=query_dsl, size=5,
+    res = es.search(index="cafe2", query=query_dsl, size=50,
                     filter_path=["hits.total,hits.hits._score",
                                  "hits.hits._source.cafeNumber",    # 카페 번호
                                  "hits.hits._source.cafeName",      # 카페 이름
