@@ -207,7 +207,7 @@ async def add_reviews(cafe_number: int, reviews: List[Review]):
 
     return result
                
-@app.post("/cafes/tags/{cafe_number}")             # 형용사를 추가한다. - input : 카페 번호, 형용사 리스트
+@app.post("/cafe/tags/{cafe_number}")             # 형용사를 추가한다. - input : 카페 번호, 형용사 리스트
 async def add_tags(cafe_number: int, tag: List[str]):
     # 카페 번호를 기준으로 해당 카페의 문서를 Elasticsearch에서 가져옴
     cafe_document = es.search(index='cafe2', body={"query": {"match": {"cafeNumber": cafe_number}}})
