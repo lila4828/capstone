@@ -1,0 +1,5 @@
+1. UI.zip을 압축을 풀고 intellij로 열기
+2. DemoApplication 실행
+3. 'http://localhost:8080/' 접속시 메인 페이지로 이동됨
+
+* 현재는 검색해도 랜덤카페 출력, 후에 수정 예정
