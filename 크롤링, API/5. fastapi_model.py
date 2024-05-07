@@ -207,7 +207,7 @@ async def add_reviews(cafe_number: int, reviews: List[Review]):
 
     return result
                
-@app.post("/cafe/tags/{cafe_number}")             # 형용사를 추가한다. - input : 카페 번호, 형용사 리스트
+@app.post("/cafe/tags/{cafe_number}")             
 async def add_tags(cafe_number: int, tag: List[str]):
     # 카페 번호를 기준으로 해당 카페의 문서를 Elasticsearch에서 가져옴
     cafe_document = es.search(index='cafe2', body={"query": {"match": {"cafeNumber": cafe_number}}})
@@ -222,7 +222,7 @@ async def add_tags(cafe_number: int, tag: List[str]):
     # 형용사를 추가하는 스크립트 준비
     script = {
         "script": {
-            "source": "ctx._source.cafeTag.add(params.cafeTag)",
+            "source": "ctx._source.cafeTag.addAll(params.cafeTag)",
             "params": {
                 "cafeTag": tag
             }
@@ -230,7 +230,7 @@ async def add_tags(cafe_number: int, tag: List[str]):
     }
 
     # Elasticsearch의 _update API를 사용하여 태그 추가
-    result = await es.update(index='cafe2', id=cafe_id, body=script)
+    result = es.update(index='cafe2', id=cafe_id, body=script)
     res.append(result)  # 결과를 리스트에 추가
     return res
 
