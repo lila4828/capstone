@@ -1,9 +1,6 @@
 import requests
 import csv
 
-from 멀티라벨모델.py import labels
-from 전경분류.py import visualize_cafe_only
-
 def cafe_info_save():
     # FastAPI 서버 URL
     url = 'http://localhost:8000/cafe_save/'
