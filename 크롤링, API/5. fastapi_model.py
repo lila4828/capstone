@@ -79,6 +79,7 @@ async def get_cafe_point(lat: float, lon: float):
                     filter_path=["hits.total,hits.hits._score",
                                  "hits.hits._source.cafeNumber",    # 카페 번호
                                  "hits.hits._source.cafeName"       # 카페 이름
+                                 "hits.hits._source.cafeImg",       # 카페 이미지 주소들
                                  ])
     return res
 
@@ -92,6 +93,7 @@ async def get_cafe_uear(search:str):
                                  "hits.hits._source.cafeNumber",    # 카페 번호
                                  "hits.hits._source.cafeName",      # 카페 이름
                                  "hits.hits._source.cafeTag"        # 카페 태그
+                                 "hits.hits._source.cafeImg",       # 카페 이미지 주소들
                                  ])
     return res
 
