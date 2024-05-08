@@ -1,6 +1,6 @@
 
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="utf-8" />
     <link rel="stylesheet" href="/table/css/styles.css">
@@ -12,15 +12,22 @@
     <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=46860540331b1c24c3c119008a5c34c4"></script>
 </head>
 <body>
-<div class="navbar">
+<input type="hidden" id="searchValue" th:value="${search}">
+<div class="navbar" style="display: flex;">
     CAFE-IN
+    <form class="form-subscribe" action="/table" method="post" data-sb-form-api-token="API_TOKEN" style="display: flex; margin-left:60%;">
+        <div class="col">
+            <input class="form-control form-control-lg" name="search" type="search" placeholder="검색">
+        </div>
+        <div class="col-auto"><button class="btn btn-primary btn-lg"  type="submit" style="margin-left: 10px;">검색</button></div>
+    </form>
 </div>
 <div class="m-p-g">
     <div class="m-p-g__thumbs" id="cafeList">
-        <div class="image">
+        <!--div class="image">
             <img src="https://search.pstatic.net/common/?autoRotate=true&amp;type=w560_sharpen&amp;src=http%3A%2F%2Fblogfiles.naver.net%2FMjAyMzExMTBfODEg%2FMDAxNjk5NjIyMzA0Nzk5.JaBHwb2N9_YJCPkYZ803CexRG0-qxJGXCmXKE2MW-xgg.ZpbJZXRJXy94QKyXrTzEZIfqsjNRXbXCqxbrQYtwMgUg.JPEG.dddddkssud%2FIMG_3638.jpg" data-full="https://search.pstatic.net/common/?autoRotate=true&amp;type=w560_sharpen&amp;src=http%3A%2F%2Fblogfiles.naver.net%2FMjAyMzExMTBfODEg%2FMDAxNjk5NjIyMzA0Nzk5.JaBHwb2N9_YJCPkYZ803CexRG0-qxJGXCmXKE2MW-xgg.ZpbJZXRJXy94QKyXrTzEZIfqsjNRXbXCqxbrQYtwMgUg.JPEG.dddddkssud%2FIMG_3638.jpg" id="1004947667" class="m-p-g__thumbs-img layout-completed" data-height="747" data-width="560" style="width: 253.888px; height: 338.668px;">
             <figcaption>비건베이커리 쿠비쿠비</figcaption>
-        </div>
+        </div-->
     </div>
 </div>
 <div class="overlay" id="overlay">
@@ -33,7 +40,7 @@
         <div class="map" id="map" style="width:500px;height:300px;"></div>
         <h2 id="cafeName"></h2>
         <p id="cafeAddress"></p>
-        <a id="cafeUrl" target="_blank"></a>
+        <button id="cafeUrl">네이버에서 보기</button>
         <div class="rep" id="rep"></div>
     </div>
     <span class="close-btn" id="close-btn">X</span>
@@ -43,7 +50,10 @@
     var elem = document.querySelector('.m-p-g');
     let cafes;
     // API 엔드포인트
-    const apiUrl = 'http://localhost:8000/get_cafe_list/';
+    var searchValue = document.getElementById('searchValue').value;
+    //const apiUrl = 'http://localhost:8000/get_cafe_list/';
+    var apiUrl = 'http://localhost:8000/get_cafe_uear/?search=' + searchValue;
+    console.log(apiUrl);
 
     // API에서 데이터를 가져와서 HTML로 출력하는 함수
     async function fetchCafes() {
@@ -76,8 +86,6 @@
                     divItem.innerHTML = `
             <img src="${cafeData.cafeImg[0].img}" data-full="${cafeData.cafeImg[0].img}" id="${cafeData.cafeNumber}">
             <figcaption>${cafeData.cafeName}</figcaption>
-            <!--p><strong>Address:</strong> ${cafeData.cafeAddress}</p>
-            <p><strong>URL:</strong> <a href="${cafeData.cafeUrl}" target="_blank">${cafeData.cafeUrl}</a><--/p>
         `;
 
                     // 생성한 요소를 DOM에 추가
@@ -106,6 +114,7 @@
         const imageElement = event.target.closest('.image');
         console.log("뜌땨뜌");
         if (imageElement) {
+            currentImageIndex=Array.from(imageElement.parentElement.children).indexOf(imageElement);
             // 클릭한 이미지에 클래스 추가
             imageElement.classList.add('image');
             // 클릭한 이미지의 id 가져오기
@@ -137,8 +146,9 @@
                 const cafeInfo = data.hits.hits[0]._source;
                 document.getElementById('cafeName').textContent = cafeInfo.cafeName;
                 document.getElementById('cafeAddress').textContent = cafeInfo.cafeAddress;
-                document.getElementById('cafeUrl').textContent = '링크: ' + cafeInfo.cafeUrl;
-                document.getElementById('cafeUrl').href = cafeInfo.cafeUrl;
+                document.getElementById('cafeUrl').addEventListener('click', function() {
+                    window.open(cafeInfo.cafeUrl, '_blank');
+                });
 
                 cafeInfo.cafeImg.forEach((image, index) => {
                     const thumbnailImg = new Image();
@@ -204,8 +214,8 @@
                             <img class="repuserpic" src="${review.userImg}" alt="User Image">
                             <div><div class="repname">${review.user}</div><div class="repdate">${review.date}</div></div>
                         </div>
-                        <img class="repimg" src="${review.img}" alt="Review Image">
-                        <p class="reptext">Text: ${review.text}</p>
+                        ${review.img ? `<img class="repimg" src="${review.img}" alt="Review Image">` : ''}
+                        <p class="reptext"> ${review.text}</p>
                 `;
                     repElement.appendChild(reviewElement);
                 });
