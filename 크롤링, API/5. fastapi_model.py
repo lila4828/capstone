@@ -78,8 +78,8 @@ async def get_cafe_point(lat: float, lon: float):
     res = es.search(index="cafe2", query=query_dsl, size=20,
                     filter_path=["hits.total,hits.hits._score",
                                  "hits.hits._source.cafeNumber",    # 카페 번호
-                                 "hits.hits._source.cafeName"       # 카페 이름
-                                 "hits.hits._source.cafeImg",       # 카페 이미지 주소들
+                                 "hits.hits._source.cafeName",      # 카페 이름
+                                 "hits.hits._source.cafeImg"        # 카페 이미지 주소들
                                  ])
     return res
 
@@ -88,12 +88,12 @@ async def get_cafe_uear(search:str):
 
     query_dsl = {"match": {"cafeTag": search}}
 
-    res = es.search(index="cafe2", query=query_dsl, size=50,
+    res = es.search(index="cafe2", query=query_dsl, size=25,
                     filter_path=["hits.total,hits.hits._score",
                                  "hits.hits._source.cafeNumber",    # 카페 번호
                                  "hits.hits._source.cafeName",      # 카페 이름
-                                 "hits.hits._source.cafeTag"        # 카페 태그
-                                 "hits.hits._source.cafeImg",       # 카페 이미지 주소들
+                                 "hits.hits._source.cafeTag",       # 카페 태그
+                                 "hits.hits._source.cafeImg"        # 카페 이미지 주소들
                                  ])
     return res
 
