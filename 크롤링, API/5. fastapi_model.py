@@ -62,6 +62,36 @@ async def get_cafe_info(cafeNum: int):
                                  ])
     return res
 
+@app.get("/get_cafe_point/")   # 위치 중심으로 거리가 가까운거와 형용사 맞는거 가져온다. - intput : 사용자 입력, 위도(lat), 경도(lon)
+async def get_cafe_uear(search:str, lat: float, lon: float):
+
+    query_dsl = {"bool":
+                    {"must": 
+                        [
+                        { "geo_distance": {
+                                "distance": "3000m",  # 3km 거리
+                                "cafePoint": {
+                                "lat": lat,         # 기준 위도
+                                "lon": lon          # 기준 경도
+                                }
+                            }
+                        },
+                        {"match": { "cafeTag": search } } # 검색할 태그
+                        ]
+                    }
+                }
+
+    res = es.search(index="cafe2", query=query_dsl, size=50,
+                    filter_path=["hits.total,hits.hits._score",
+                                 "hits.hits._source.cafeNumber",    # 카페 번호
+                                 "hits.hits._source.cafeName",      # 카페 이름
+                                 "hits.hits._source.cafeTag",       # 카페 태그
+                                 "hits.hits._source.cafePoint",     # 위경도
+                                 "hits.hits._source.cafeImg"        # 카페 이미지 주소들
+                                 ])
+    return res
+
+
 @app.get("/get_cafe_point_sort/")   # 태그에 맞는 카페 정보를 거리순으로 정렬하여 가져온다. - intput : 사용자 입력, 위도(lat), 경도(lon)
 async def get_cafe_uear(search:str, lat: float, lon: float):
 
