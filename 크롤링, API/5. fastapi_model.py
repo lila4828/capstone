@@ -62,23 +62,35 @@ async def get_cafe_info(cafeNum: int):
                                  ])
     return res
 
-@app.get("/get_cafe_point/")      # 주변 카페 정보(카페 번호, 카페 이름)를 가져온다.  - intput 위도(lat), 경도(lon)
-async def get_cafe_point(lat: float, lon: float):
-    query_dsl = { "bool": {
-                            "must": [ {
-                                "geo_distance": { 
-                                    "distance": "30000m",   # 3km 안에
-                                    "cafePoint": {
-                                        "lat": lat,   # 기준 위도
-                                        "lon": lon   # 기준 경도
-                                    }
-                                }
-                            } ] } }
+@app.get("/get_cafe_point_sort/")   # 태그에 맞는 카페 정보를 거리순으로 정렬하여 가져온다. - intput : 사용자 입력, 위도(lat), 경도(lon)
+async def get_cafe_uear(search:str, lat: float, lon: float):
 
-    res = es.search(index="cafe2", query=query_dsl, size=20,
+    query_dsl = {           # 형용사만 맞으면 가까운거 부터 정렬해서 보내주고
+        "query": {
+            "match": {
+                "cafeTag": search
+            }
+        },
+        "sort": [
+            {
+                "_geo_distance": {
+                    "location": {  # 'location' 필드는 위경도 값이 저장된 필드를 나타냅니다.
+                        "lat": lat,
+                        "lon": lon
+                    },
+                    "order": "asc",  # 오름차순 정렬 (가까운 거리부터)
+                    "unit": "3000m"  # 거리 단위 (킬로미터)
+                }
+            }
+        ]
+    }
+
+    res = es.search(index="cafe2", query=query_dsl, size=50,
                     filter_path=["hits.total,hits.hits._score",
                                  "hits.hits._source.cafeNumber",    # 카페 번호
                                  "hits.hits._source.cafeName",      # 카페 이름
+                                 "hits.hits._source.cafeTag",       # 카페 태그
+                                 "hits.hits._source.cafePoint",     # 위경도
                                  "hits.hits._source.cafeImg"        # 카페 이미지 주소들
                                  ])
     return res
@@ -88,14 +100,16 @@ async def get_cafe_uear(search:str):
 
     query_dsl = {"match": {"cafeTag": search}}
 
-    res = es.search(index="cafe2", query=query_dsl, size=25,
+    res = es.search(index="cafe2", query=query_dsl, size=50,
                     filter_path=["hits.total,hits.hits._score",
                                  "hits.hits._source.cafeNumber",    # 카페 번호
                                  "hits.hits._source.cafeName",      # 카페 이름
                                  "hits.hits._source.cafeTag",       # 카페 태그
+                                 "hits.hits._source.cafePoint",     # 위경도
                                  "hits.hits._source.cafeImg"        # 카페 이미지 주소들
                                  ])
     return res
+
 
 @app.get("/get_cafe_images/")          # 카페 이미지를 가져온다. - input : 카페 번호
 async def get_cafe_images(cafe_number: int):
