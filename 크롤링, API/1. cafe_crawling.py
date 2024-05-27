@@ -91,7 +91,7 @@ def crawling_main():
     
     naver_temp = pd.DataFrame([restaurant_id_list, cafeName_list, addr_list, cafe_url_list], index=naver_res.columns).T
     naver_res = pd.concat([naver_res, naver_temp])
-    naver_res.to_excel('./naver_crawling.xlsx', engine='openpyxl')
+    naver_res.to_excel('./naver_crawling2.xlsx', engine='openpyxl')
 
 
 def go_to_next_page():
@@ -126,8 +126,8 @@ while True:  # 무한 루프
     if not go_to_next_page():  # 다음 페이지로 이동 실패한 경우 루프 종료
         break
 
-excel_file = 'naver_crawling.xlsx'  #xlsx 파일 불러와서
-csv_file = 'naver_crawling.csv'     #csv 파일 변환
+excel_file = 'naver_crawling2.xlsx'  #xlsx 파일 불러와서
+csv_file = 'naver_crawling2.csv'     #csv 파일 변환
 
 df = pd.read_excel(excel_file)
 

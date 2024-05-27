@@ -33,7 +33,7 @@ list_sheet.append(['cafeNumber','nickName', 'nameImg', 'date', 'revisit', 'revie
 path = r"C:\Users\djdj4\vscode\capstone"
 
 # 각각의 카페의 고유 번호 csv에서 가져오기
-csv_file = 'naver_crawling.csv'
+csv_file = 'naver_cafe2.csv'
 data = pd.read_csv(csv_file)
 
 try:
@@ -123,12 +123,12 @@ try:
 finally:
     driver.quit()
     # Save the file
-    file_name = './naver_review.xlsx'
+    file_name = './naver_review3.xlsx'
     xlsx.save(file_name)
 
 
-excel_file = 'naver_review.xlsx'  #xlsx 파일 불러와서
-csv_file = 'naver_review.csv'     #csv 파일 변환
+excel_file = 'naver_review3.xlsx'  #xlsx 파일 불러와서
+csv_file = 'naver_review3.csv'     #csv 파일 변환
 
 df = pd.read_excel(excel_file)
 
