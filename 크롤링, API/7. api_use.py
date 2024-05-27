@@ -6,7 +6,7 @@ def cafe_info_save():
     url = 'http://localhost:8000/cafe_save/'
 
     # CSV 파일 경로
-    csv_file_path = 'naver_cafe2.csv'
+    csv_file_path = 'naver_cafe3.csv'
 
     # CSV 파일 읽기
     with open(csv_file_path, mode='r', encoding='utf-8-sig') as csvfile:
@@ -33,7 +33,7 @@ def cafe_info_save():
 
 def cafe_review_save():
     # CSV 파일 경로
-    csv_file_path = 'naver_review2.csv'
+    csv_file_path = 'naver_review3.csv'
 
     with open(csv_file_path, mode='r', encoding='utf-8-sig') as csvfile:
         reader = csv.DictReader(csvfile)
@@ -86,7 +86,7 @@ def cafe_review_save():
 
 def add_cafe_images():
     # CSV 파일 경로
-    csv_file_path = 'naver_img2.csv'
+    csv_file_path = 'naver_img3.csv'
 
     with open(csv_file_path, mode='r', encoding='utf-8-sig') as csvfile:
         reader = csv.DictReader(csvfile)

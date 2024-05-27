@@ -26,7 +26,7 @@ list_sheet.append(['cafeNumber','cafeImg'])
 path = r"C:\Users\djdj4\vscode\capstone"
 
 # 각각의 카페의 고유 번호 csv에서 가져오기
-csv_file = 'naver_cafe2.csv'
+csv_file = r'C:\Users\djdj4\vscode\capstone\크롤링, API\naver_cafe3.csv'
 data = pd.read_csv(csv_file)
 
 try:
@@ -34,7 +34,7 @@ try:
     driver.implicitly_wait(30)
 
     for index, row in data.iterrows():
-        value = row.iloc[1]
+        value = row.iloc[0]
         img_list = []
 
         # url
@@ -61,11 +61,11 @@ try:
                     
                     if img_src:
                         img_path = path + r"\cafeImg\\" + str(value) + '_' + str(i) +'.jpg'   # 이미지 경로 생성
-                        urllib.request.urlretrieve(img_src, img_path)                 # 이미지 다운로드
+                        #urllib.request.urlretrieve(img_src, img_path)                 # 이미지 다운로드
                     else:
                         img_path = ''
 
-                    list_sheet.append([value, img_path])
+                    list_sheet.append([value, img_src])
             except Exception as e:
                 print(e)
 

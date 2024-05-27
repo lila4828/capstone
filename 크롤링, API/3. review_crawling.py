@@ -33,7 +33,7 @@ list_sheet.append(['cafeNumber','nickName', 'nameImg', 'date', 'revisit', 'revie
 path = r"C:\Users\djdj4\vscode\capstone"
 
 # 각각의 카페의 고유 번호 csv에서 가져오기
-csv_file = 'naver_cafe2.csv'
+csv_file = r'C:\Users\djdj4\vscode\capstone\크롤링, API\naver_cafe3.csv'
 data = pd.read_csv(csv_file)
 
 try:
@@ -41,7 +41,7 @@ try:
     driver.implicitly_wait(30)
 
     for index, row in data.iterrows():
-        value = row.iloc[1]
+        value = row.iloc[0]
 
         # url
         if not pd.isnull(value):
@@ -87,7 +87,7 @@ try:
                     nameImgSrc = nameImg.get("src")                                            # img에서 다운받을 주소 src
                     if nameImgSrc:
                         nameImgPath = path + r"\nameImg\\" + nickName +'.jpg'
-                        urllib.request.urlretrieve(nameImgSrc, nameImgPath)
+                        #urllib.request.urlretrieve(nameImgSrc, nameImgPath)
                     else:
                         nameImgPath = ''
                 else:
@@ -105,13 +105,13 @@ try:
                     reviewImgSrc = reviewImg.get("src")  # 리뷰 이미지의 src 속성 값 가져오기
                     if reviewImgSrc:
                         reviewImgPath = path + r"\reviewImg\\" + nickName + '_review.jpg'
-                        urllib.request.urlretrieve(reviewImgSrc, reviewImgPath)
+                        #urllib.request.urlretrieve(reviewImgSrc, reviewImgPath)
                     else:
                         reviewImgPath = ''
 
                 time.sleep(0.06)
 
-                list_sheet.append([value, nickName, nameImgPath, date, revisit, reviewImgPath]) 
+                list_sheet.append([value, nickName, nameImgSrc, date, revisit, reviewImgSrc]) 
                 time.sleep(0.06)
             
         except Exception as e:
