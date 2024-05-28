@@ -6,7 +6,7 @@ def cafe_info_save():
     url = 'http://localhost:8000/cafe_save/'
 
     # CSV 파일 경로
-    csv_file_path = 'naver_cafe3.csv'
+    csv_file_path = r'C:\Users\djdj4\vscode\capstone\크롤링, API\naver_cafe3.csv'
 
     # CSV 파일 읽기
     with open(csv_file_path, mode='r', encoding='utf-8-sig') as csvfile:
@@ -14,7 +14,7 @@ def cafe_info_save():
         for row in reader:
             # 각 행에서 cafe_info 추출
             cafe_info = {
-                "cafeNumber": int(row['카페 번호']),
+                "cafeNumber": int(float(row['카페 번호'])),
                 "cafeName": row['카페 이름'],
                 "cafeUrl": row['URL'],
                 "cafeAddress": row['도로명 주소'],
@@ -33,7 +33,7 @@ def cafe_info_save():
 
 def cafe_review_save():
     # CSV 파일 경로
-    csv_file_path = 'naver_review3.csv'
+    csv_file_path = r'C:\Users\djdj4\vscode\capstone\크롤링, API\naver_review3.csv'
 
     with open(csv_file_path, mode='r', encoding='utf-8-sig') as csvfile:
         reader = csv.DictReader(csvfile)
@@ -86,7 +86,7 @@ def cafe_review_save():
 
 def add_cafe_images():
     # CSV 파일 경로
-    csv_file_path = 'naver_img3.csv'
+    csv_file_path = r'C:\Users\djdj4\vscode\capstone\크롤링, API\naver_img3.csv'
 
     with open(csv_file_path, mode='r', encoding='utf-8-sig') as csvfile:
         reader = csv.DictReader(csvfile)
@@ -135,6 +135,6 @@ def add_cafe_images():
 
         return response.text  # 또는 다른 값으로 변경 가능
 
-#cafe_info_save()
-#add_cafe_images()
-#cafe_review_save()
+cafe_info_save()
+add_cafe_images()
+cafe_review_save()

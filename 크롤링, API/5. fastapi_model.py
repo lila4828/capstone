@@ -49,7 +49,7 @@ async def get_cafe_info(cafeNum: int):
 
     query_dsl = {"bool": {"must": [{"match_all": {}}], "filter": [{"match": {"cafeNumber": cafeNum}}]}}
 
-    res = es.search(index="cafe2", query=query_dsl, size=1,
+    res = es.search(index="cafe", query=query_dsl, size=1,
                     filter_path=["hits.total,hits.hits._score",
                                  "hits.hits._source.cafeNumber",    # 카페 번호
                                  "hits.hits._source.cafeName",      # 카페 이름
@@ -81,7 +81,7 @@ async def get_cafe_uear(search:str, lat: float, lon: float):
                     }
                 }
 
-    res = es.search(index="cafe2", query=query_dsl, size=50,
+    res = es.search(index="cafe", query=query_dsl, size=50,
                     filter_path=["hits.total,hits.hits._score",
                                  "hits.hits._source.cafeNumber",    # 카페 번호
                                  "hits.hits._source.cafeName",      # 카페 이름
@@ -115,7 +115,7 @@ async def get_cafe_uear(search:str, lat: float, lon: float):
         ]
     }
 
-    res = es.search(index="cafe2", query=query_dsl, size=50,
+    res = es.search(index="cafe", query=query_dsl, size=50,
                     filter_path=["hits.total,hits.hits._score",
                                  "hits.hits._source.cafeNumber",    # 카페 번호
                                  "hits.hits._source.cafeName",      # 카페 이름
@@ -130,7 +130,7 @@ async def get_cafe_uear(search:str):
 
     query_dsl = {"match": {"cafeTag": search}}
 
-    res = es.search(index="cafe2", query=query_dsl, size=50,
+    res = es.search(index="cafe", query=query_dsl, size=50,
                     filter_path=["hits.total,hits.hits._score",
                                  "hits.hits._source.cafeNumber",    # 카페 번호
                                  "hits.hits._source.cafeName",      # 카페 이름
@@ -144,7 +144,7 @@ async def get_cafe_uear(search:str):
 @app.get("/get_cafe_images/")          # 카페 이미지를 가져온다. - input : 카페 번호
 async def get_cafe_images(cafe_number: int):
     # 카페 번호를 기준으로 해당 카페의 문서를 Elasticsearch에서 가져옴
-    cafe_document = es.search(index='cafe2', body={"query": {"match": {"cafeNumber": cafe_number}}})
+    cafe_document = es.search(index='cafe', body={"query": {"match": {"cafeNumber": cafe_number}}})
     if not cafe_document['hits']['hits']:
         raise HTTPException(status_code=404, detail="카페가 존재하지 않습니다.")
 
@@ -170,14 +170,14 @@ async def cafe_save(cafe_info: CafeInfo):
         "cafeTag": [cafe_info.cafeTag]
     }
     # Elasticsearch에 문서 색인
-    res = es.index(index='cafe2', body=cafe_document)
+    res = es.index(index='cafe', body=cafe_document)
 
     return res
 
 @app.post("/cafe/images/{cafe_number}")    # 카페 이미지를 추가한다 - input : 카페 번호, 이미지 리스트(이미지 번호, 이미지주소)
 async def add_cafe_images(cafe_number: int, cafe_images: List[CafeImage]):
     # 카페 번호를 기준으로 해당 카페의 문서를 Elasticsearch에서 가져옴
-    cafe_document = es.search(index='cafe2', body={"query": {"match": {"cafeNumber": cafe_number}}})
+    cafe_document = es.search(index='cafe', body={"query": {"match": {"cafeNumber": cafe_number}}})
     if not cafe_document['hits']['hits']:
         raise HTTPException(status_code=404, detail="카페가 존재하지 않습니다.")
 
@@ -198,14 +198,14 @@ async def add_cafe_images(cafe_number: int, cafe_images: List[CafeImage]):
         }
 
         # Elasticsearch의 _update API를 사용하여 리뷰 추가
-        res = es.update(index='cafe2', id=cafe_id, body=script)
+        res = es.update(index='cafe', id=cafe_id, body=script)
     
     return res
 
 @app.post("/cafe/reviews/{cafe_number}")      # 리뷰 리스트를 추가한다. - input : 카페 번호, 리뷰 리스트(번호, 내용, 이미지주소)
 async def add_reviews(cafe_number: int, reviews: List[Review]):
     # 카페 번호를 기준으로 해당 카페의 문서를 Elasticsearch에서 가져옴
-    cafe_document = es.search(index='cafe2', body={"query": {"match": {"cafeNumber": cafe_number}}})
+    cafe_document = es.search(index='cafe', body={"query": {"match": {"cafeNumber": cafe_number}}})
     if not cafe_document['hits']['hits']:
         raise HTTPException(status_code=404, detail="카페가 존재하지 않습니다.")
 
@@ -230,14 +230,14 @@ async def add_reviews(cafe_number: int, reviews: List[Review]):
         }
 
         # Elasticsearch의 _update API를 사용하여 리뷰 추가
-        result = es.update(index='cafe2', id=cafe_id, body=script)
+        result = es.update(index='cafe', id=cafe_id, body=script)
 
     return result
                
 @app.post("/cafe/tags/{cafe_number}")             
 async def add_tags(cafe_number: int, tag: List[str]):
     # 카페 번호를 기준으로 해당 카페의 문서를 Elasticsearch에서 가져옴
-    cafe_document = es.search(index='cafe2', body={"query": {"match": {"cafeNumber": cafe_number}}})
+    cafe_document = es.search(index='cafe', body={"query": {"match": {"cafeNumber": cafe_number}}})
     if not cafe_document['hits']['hits']:
         raise HTTPException(status_code=404, detail="카페가 존재하지 않습니다.")
 
@@ -257,9 +257,9 @@ async def add_tags(cafe_number: int, tag: List[str]):
     }
 
     # Elasticsearch의 _update API를 사용하여 태그 추가
-    result = es.update(index='cafe2', id=cafe_id, body=script)
+    result = es.update(index='cafe', id=cafe_id, body=script)
     res.append(result)  # 결과를 리스트에 추가
     return res
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8080)
