@@ -1,0 +1,463 @@
+
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="/map/css/styles.css">
+    <title>카페인 - 카페탐방 서비스 map</title>
+    <link href="https://fonts.googleapis.com/css?family=Montserrat:400,700" rel="stylesheet" type="text/css" />
+    <link href="https://fonts.googleapis.com/css?family=Roboto+Slab:400,100,300,700" rel="stylesheet" type="text/css" />
+    <!-- Core theme CSS (includes Bootstrap)-->
+    <link href="https://fonts.googleapis.com/css?family=Lato&display=swap" rel="stylesheet">
+    <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=46860540331b1c24c3c119008a5c34c4"></script>
+</head>
+<body>
+<input type="hidden" id="searchValue" th:value="${search}">
+<div class="navbar" style="display: flex;">
+    <a style="text-decoration: none; color: inherit;" href="/">CAFE-IN</a>
+    <div class="form-container" style="display: flex; margin-left: 60%;">
+        <form class="form-subscribe" action="/map" method="post" data-sb-form-api-token="API_TOKEN" style="display: flex;">
+            <div class="col">
+                <input class="form-control form-control-lg" name="search" type="search" placeholder="검색">
+            </div>
+            <div class="col-auto"><button class="btn btn-primary btn-lg" type="submit" style="margin-left: 10px;">검색</button></div>
+        </form>
+        <form class="form-subscribe" action="/table" method="post" data-sb-form-api-token="API_TOKEN" style="display: flex; margin-left: 10px;">
+            <input type="hidden" name="search" th:value="${search}">
+            <div class="col-auto"><button class="btn btn-primary btn-lg" type="submit" style="margin-left: 10px;">테이블 보기</button></div>
+        </form>
+    </div>
+</div>
+<div class="m-p-g">
+        <div class="m-p-g__thumbs" id="cafeList">
+            <!--div class="image">
+                <img src="https://search.pstatic.net/common/?autoRotate=true&amp;type=w560_sharpen&amp;src=http%3A%2F%2Fblogfiles.naver.net%2FMjAyMzExMTBfODEg%2FMDAxNjk5NjIyMzA0Nzk5.JaBHwb2N9_YJCPkYZ803CexRG0-qxJGXCmXKE2MW-xgg.ZpbJZXRJXy94QKyXrTzEZIfqsjNRXbXCqxbrQYtwMgUg.JPEG.dddddkssud%2FIMG_3638.jpg" data-full="https://search.pstatic.net/common/?autoRotate=true&amp;type=w560_sharpen&amp;src=http%3A%2F%2Fblogfiles.naver.net%2FMjAyMzExMTBfODEg%2FMDAxNjk5NjIyMzA0Nzk5.JaBHwb2N9_YJCPkYZ803CexRG0-qxJGXCmXKE2MW-xgg.ZpbJZXRJXy94QKyXrTzEZIfqsjNRXbXCqxbrQYtwMgUg.JPEG.dddddkssud%2FIMG_3638.jpg" id="1004947667" class="m-p-g__thumbs-img layout-completed" data-height="747" data-width="560" style="width: 253.888px; height: 338.668px;">
+                <figcaption>비건베이커리 쿠비쿠비</figcaption>
+            </div-->
+        </div>
+        <div class="m-p-g__pages">
+            <button id="prevPage">이전 페이지</button>
+            <span id="currentPage">1</span>
+            <button id="nextPage">다음 페이지</button>
+        </div>
+        <div class="map-container" id="map">
+        </div>
+</div>
+<div class="overlay" id="overlay" style="display:none">
+    <div class="expanded-info" id="expanded-info">
+        <div class="image-container">
+            <img class="imageL" id="imageL" src="" alt="카페 이미지">
+        </div>
+        <input type="range" min="1" class="slider" id="imageSlider" style="display:none; width:500px;">
+        <h2 id="cafeName" style="margin:10px"></h2>
+        <p id="cafeAddress"></p>
+        <button id="cafeUrl">네이버에서 보기</button>
+        <div class="rep" id="rep"></div>
+    </div>
+    <span class="close-btn" id="close-btn">X</span>
+    <div class="image-thumbnails" id="image-thumbnails" style="display:none"></div>
+</div>
+<script>
+    var mkimg = ["/map/images/A.png","/map/images/B.png","/map/images/C.png","/map/images/D.png","/map/images/E.png","/map/images/F.png","/map/images/G.png","/map/images/H.png","/map/images/I.png","/map/images/J.png"];
+    const cafesPerPage = 10; // 페이지 당 카페 개수
+    let currentPage = 1; // 현재 페이지 번호
+    var elem = document.querySelector('.m-p-g');
+    let cafes;
+    // API 엔드포인트
+    var searchValue = document.getElementById('searchValue').value;
+    //const apiUrl = 'http://localhost:8000/get_cafe_list/';
+    var apiUrl = 'http://localhost:8000/get_cafe_uear/?search=' + searchValue;
+    var apipoint = 'http://localhost:8000/get_cafe_point/?search=' + searchValue+'&lat='+'34.7918382999999'+'&lon='+'126.3845883';
+    console.log(apiUrl);
+    let totalCafes;
+    let positions;
+    let ppositions;
+    let fpositions;
+    var map;
+    var firstone;
+    // API에서 데이터를 가져와서 HTML로 출력하는 함수
+    async function fetchCafes() {
+        try {
+            // API 호출
+            const response = await fetch(apiUrl);
+            const data = await response.json();
+
+            const presponse = await fetch(apipoint);
+            const pdata = await presponse.json();
+
+            // 전체 카페 수
+            totalCafes = data.hits.total.value;
+
+            // 카페 목록을 가져옴
+            const cafes = data.hits.hits;
+
+            // 페이지 당 카페 개수에 맞게 데이터를 잘라서 가져옴
+            const startIndex = (currentPage - 1) * cafesPerPage;
+            const endIndex = startIndex + cafesPerPage;
+            const paginatedCafes = cafes.slice(startIndex, endIndex);
+
+            positions = [];
+            ppositions = [];
+
+            // 가져온 데이터를 HTML로 변환하여 출력
+            const cafeListElement = document.getElementById('cafeList');
+            cafeListElement.innerHTML = ''; // 기존 목록을 초기화
+
+
+            const pcafes = pdata.hits.hits;
+
+            pcafes.forEach((cafe) => {
+                const cafeData = cafe._source;
+
+                var content = `<div class="wrap">
+                    <div class="info">
+                        <div class="title">
+                            ${cafeData.cafeName}
+                            <div class="close" onclick="closeOverlay()" title="닫기"></div>
+                        </div>
+                        <div class="body">
+                            <div class="img">
+                                <img src=${cafeData.cafeImg[0].img} width="73" height="70">
+                            </div>
+                            <div class="desc">
+                                <div class="ellipsis">${cafeData.cafeAddress}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+
+                // 마커를 생성하고 배열에 추가
+                var position = {
+                    id: cafeData.cafeNumber,
+                    content: content,
+                    latlng: new kakao.maps.LatLng(cafeData.cafePoint.lat, cafeData.cafePoint.lon)
+                }
+                ppositions.push(position);
+            });
+
+            paginatedCafes.forEach((cafe, number) => {
+                const cafeData = cafe._source;
+                const divItem = document.createElement('div');
+                divItem.classList.add('image');
+
+                // 새로운 이미지 객체 생성
+                const img = new Image();
+
+                // 이미지가 로드되었을 때의 이벤트 핸들러
+                img.onload = function() {
+                    // 이미지의 높이와 너비 가져오기
+                    const imgHeight = this.naturalHeight;
+                    const imgWidth = this.naturalWidth;
+
+                    var character = String.fromCharCode(65+number);
+                    // 이미지 및 관련 정보 추가
+                    divItem.innerHTML = `
+                <div class="blu" id="blu"><div class="imgnum" id="imgnum">${character}</div></div>
+                <img src="${cafeData.cafeImg[0].img}" data-full="${cafeData.cafeImg[0].img}" id="${cafeData.cafeNumber}">
+                <figcaption><b>${cafeData.cafeName}</b></figcaption>
+                <ul class="cafe-tags">
+                    ${cafeData.cafeTag.map((tag, index) => index == 0 ? '' : `<li>${tag}</li>`).join('')}
+                </ul>`;
+
+                    // 생성한 요소를 DOM에 추가
+                    cafeListElement.appendChild(divItem);
+                };
+
+                // 이미지의 URL 설정하여 로드 시작
+                img.src = cafeData.cafeImg[0].img;
+
+                var content = `<div class="wrap">
+                    <div class="info">
+                        <div class="title">
+                            ${cafeData.cafeName}
+                            <div class="close" onclick="closeOverlay()" title="닫기"></div>
+                        </div>
+                        <div class="body">
+                            <div class="img">
+                                <img src=${cafeData.cafeImg[0].img} width="73" height="70">
+                            </div>
+                            <div class="desc">
+                                <div class="ellipsis">${cafeData.cafeAddress}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+
+                // 마커를 생성하고 배열에 추가
+                var position = {
+                    id: cafeData.cafeNumber,
+                    content: content,
+                    latlng: new kakao.maps.LatLng(cafeData.cafePoint.lat, cafeData.cafePoint.lon)
+                }
+                positions.push(position);
+            });
+
+            fpositions = ppositions.filter(item => !positions.includes(item));
+
+// 페이지 이동 버튼 업데이트
+            updatePagination(totalCafes);
+
+            firstone=paginatedCafes[0];
+            fetchInfo(firstone._source.cafeNumber);
+// 지도에 모든 마커를 표시
+            let mapContainer = document.getElementById('map');
+            mapContainer.innerHTML = '';
+            const mapOptions = {
+                center: new kakao.maps.LatLng(firstone._source.cafePoint.lat, firstone._source.cafePoint.lon),
+                level: 6
+            };
+            map = new kakao.maps.Map(mapContainer, mapOptions);
+
+            var markerImageSize = new kakao.maps.Size(40, 42), // 마커 이미지의 크기
+                markerImageOptions = {
+                    offset : new kakao.maps.Point(17, 24)// 마커 좌표에 일치시킬 이미지 안의 좌표
+                };
+
+
+
+// 마커를 지도에 추가하고, 마커 위에 마우스를 올렸을 때 인포윈도우가 나타나도록 설정합니다
+            for(let i=0;i<positions.length; i++){
+                var markerImage = new kakao.maps.MarkerImage(mkimg[i], markerImageSize, markerImageOptions);
+                var marker = new kakao.maps.Marker({
+                    map: map, // 마커를 표시할 지도
+                    zIndex:3,
+                    image : markerImage, // 마커의 이미지
+                    position: positions[i].latlng // 마커의 위치
+                });
+
+                // 마커에 표시할 인포윈도우를 생성합니다
+                var infowindow = new kakao.maps.InfoWindow({
+                    zIndex:10,
+                    content: positions[i].content // 인포윈도우에 표시할 내용
+                });
+
+                // 마커에 mouseover 이벤트와 mouseout 이벤트를 등록합니다
+                // 이벤트 리스너로는 클로저를 만들어 등록합니다
+                // for문에서 클로저를 만들어 주지 않으면 마지막 마커에만 이벤트가 등록됩니다
+                kakao.maps.event.addListener(marker, 'mouseover', makeOverListener(map, marker, infowindow));
+                kakao.maps.event.addListener(marker, 'mouseout', makeOutListener(infowindow));
+                kakao.maps.event.addListener(marker, 'click', function() {
+                    document.getElementById('overlay').style.display = 'block';
+                    document.querySelector('.expanded-info').style.display = 'block';
+                    fetchInfo(positions[i].id);
+                });
+            }
+
+            for(let i=0;i<fpositions.length; i++){
+
+                var marker = new kakao.maps.Marker({
+                    map: map, // 마커를 표시할 지도
+                    zIndex:2,
+                    position: fpositions[i].latlng // 마커의 위치
+                });
+
+                // 마커에 표시할 인포윈도우를 생성합니다
+                var infowindow = new kakao.maps.InfoWindow({
+                    zIndex:10,
+                    content: fpositions[i].content // 인포윈도우에 표시할 내용
+                });
+
+                // 마커에 mouseover 이벤트와 mouseout 이벤트를 등록합니다
+                // 이벤트 리스너로는 클로저를 만들어 등록합니다
+                // for문에서 클로저를 만들어 주지 않으면 마지막 마커에만 이벤트가 등록됩니다
+                kakao.maps.event.addListener(marker, 'mouseover', makeOverListener(map, marker, infowindow));
+                kakao.maps.event.addListener(marker, 'mouseout', makeOutListener(infowindow));
+                kakao.maps.event.addListener(marker, 'click', function() {
+                    document.getElementById('overlay').style.display = 'block';
+                    document.querySelector('.expanded-info').style.display = 'block';
+                    fetchInfo(fpositions[i].id);
+                });
+            }
+            function makeOverListener(map, marker, infowindow) {
+                return function() {
+                    infowindow.open(map, marker);
+                };
+            }
+
+            // 인포윈도우를 닫는 클로저를 만드는 함수입니다
+            function makeOutListener(infowindow) {
+                return function() {
+                    infowindow.close();
+                };
+            }
+
+        } catch (error) {
+            console.error('Error fetching cafe list:', error);
+        }
+    }
+
+    // 페이지 이동 버튼 업데이트 함수
+    function updatePagination(totalCafes) {
+        const totalPages = Math.ceil(totalCafes / cafesPerPage);
+        const prevPageButton = document.getElementById('prevPage');
+        const nextPageButton = document.getElementById('nextPage');
+
+        prevPageButton.disabled = currentPage === 1; // 첫 페이지에서는 이전 페이지 버튼 비활성화
+        nextPageButton.disabled = currentPage === totalPages; // 마지막 페이지에서는 다음 페이지 버튼 비활성화
+    }
+
+    // 현재 페이지 번호 업데이트 함수
+    function updateCurrentPage() {
+        document.getElementById('currentPage').innerText = currentPage;
+    }
+
+    // 이전 페이지로 이동하는 함수
+    function goToPreviousPage() {
+        if (currentPage > 1) {
+            currentPage--;
+            fetchCafes();
+            updateCurrentPage();
+
+        }
+    }
+
+    // 다음 페이지로 이동하는 함수
+    function goToNextPage() {
+        const totalPages = Math.ceil(totalCafes / cafesPerPage);
+        if (currentPage < totalPages) {
+            currentPage++;
+            fetchCafes();
+            updateCurrentPage();
+        }
+    }
+
+    // 페이지 이동 버튼에 이벤트 리스너 추가
+    document.getElementById('prevPage').addEventListener('click', goToPreviousPage);
+    document.getElementById('nextPage').addEventListener('click', goToNextPage);
+
+    // 초기 데이터 로드
+    fetchCafes();
+</script>
+<script>
+    let currentImageIndex = 0;
+    console.log("뜌땨?");
+    // 부모 요소인 .m-p-g__thumbs에서 클릭 이벤트를 감지하여 이미지 클릭 시 동작하도록 함
+    document.getElementById('cafeList').addEventListener('click', function(event) {
+        // 클릭한 요소가 이미지인지 확인하고 하위 요소 중에 img 태그가 있는지 확인
+        if (event.target.tagName === 'IMG') {
+            const imageElement = event.target.closest('.image');
+            console.log("뜌땨뜌");
+            if (imageElement) {
+                currentImageIndex=Array.from(imageElement.parentElement.children).indexOf(imageElement);
+                // 클릭한 이미지에 클래스 추가
+                imageElement.classList.add('image');
+                // 클릭한 이미지의 id 가져오기
+                const imageId = imageElement.querySelector('img').id;
+                fetchInfo(imageId);
+                console.log("뜌땨뜌땨"+imageId);
+
+                // API에 검색 요청 보내기 (가정)
+                // 여기서는 간단히 이미지 id를 확장된 정보로 출력하는 것으로 대체합니다.
+
+            }
+        }
+    });
+    //상세보기 나가기
+    document.getElementById('close-btn').addEventListener('click', function() {
+        document.getElementById('overlay').style.display = 'none';
+        document.querySelector('.expanded-info').style.display = 'none';
+        document.getElementById('image-thumbnails').innerHTML = '';
+        currentImageIndex = 0;
+        console.log("뜌땨야!");
+    });
+    function fetchInfo(imageId) {
+        fetch(`http://localhost:8000/get_cafe_info/?cafeNum=${imageId}`)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('image-thumbnails').innerHTML = '';
+                const imageThumbnailsElement = document.getElementById('image-thumbnails'); // 새로운 요소 추가
+                const cafeInfo = data.hits.hits[0]._source;
+                document.getElementById('cafeName').textContent = cafeInfo.cafeName;
+                document.getElementById('cafeAddress').innerHTML = `
+                        ${cafeInfo.cafeAddress}
+                        <ul class="cafe-tags" style="margin-top: 10px">
+                            ${cafeInfo.cafeTag.map((tag, index) => index == 0 ? '' : `<li>${tag}</li>`).join('')}
+                        </ul>`;
+                document.getElementById('cafeUrl').addEventListener('click', function() {
+                    window.open(cafeInfo.cafeUrl, '_blank');
+                });
+
+                cafeInfo.cafeImg.forEach((image, index) => {
+                    const thumbnailImg = new Image();
+                    thumbnailImg.src = image.img;
+                    thumbnailImg.classList.add('thumbnail-image');
+                    thumbnailImg.onclick = function() {
+                        document.getElementById('imageL').src = image.img;
+                        currentImageIndex=index;
+                    };
+                    imageThumbnailsElement.appendChild(thumbnailImg);
+                });
+
+                // 썸네일 이미지들을 출력한 후에 줄 바꿈 요소 추가 (옵션)
+                const lineBreak = document.createElement('br');
+                imageThumbnailsElement.appendChild(lineBreak);
+
+                var myDiv = document.getElementById("overlay");
+                if (myDiv.style.display === "none") {
+                    map.panTo(new kakao.maps.LatLng(cafeInfo.cafePoint.lat, cafeInfo.cafePoint.lon));
+                }
+                // 지도에 카페 위치 표시
+
+                console.log(cafeInfo.cafePoint.lat);
+                console.log(cafeInfo.cafePoint.lon);
+
+                // 이미지 출력
+                const imageContainer = document.getElementById('imageL');
+                console.log(cafeInfo.cafeImg[0].img);
+                displayImage(imageContainer, cafeInfo.cafeImg);
+
+
+                const imageL = document.querySelector('.imageL');
+                const slider = document.getElementById('imageSlider');
+                const images = document.querySelectorAll('.thumbnail-image');
+
+                console.log(images[0].getAttribute("src")+"뜌따뜌땨");
+
+                const imageCount = images.length;
+
+                if (imageCount > 1) {
+                    slider.value = 1;
+                    slider.max = imageCount;
+                    slider.style.display = 'block';
+
+                    slider.addEventListener('input', function() {
+                        const imageIndex = this.value - 1;
+                        imageL.src=images[imageIndex].getAttribute("src");
+                    });
+                } else {
+                    slider.style.display = 'none';
+                }
+
+
+                const reviews = cafeInfo.review; // 리뷰 목록 가져오기
+
+                const repElement = document.getElementById('rep');
+                repElement.innerHTML = ''; // rep 요소 초기화
+
+                // 리뷰를 반복하여 rep 요소에 추가
+                reviews.forEach(review => {
+                    const reviewElement = document.createElement('div');
+                    reviewElement.classList.add('review');
+                    reviewElement.innerHTML = `
+                        <div style="display:flex">
+                            <img class="repuserpic" src="${review.userImg}" alt="User Image">
+                            <div><div class="repname">${review.user}</div><div class="repdate">${review.date}</div></div>
+                        </div>
+                        ${review.img ? `<img class="repimg" src="${review.img}" alt="Review Image">` : ''}
+                        <p class="reptext"> ${review.text}</p>
+                `;
+                    repElement.appendChild(reviewElement);
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching info:', error);
+            });
+    }
+
+    function displayImage(container, images) {
+        console.log(images[0].img + "ED");
+        container.src = images[0].img;
+    }
+</script>
+</body>
+</html>
