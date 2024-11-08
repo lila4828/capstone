@@ -117,7 +117,7 @@ def cafe() :
         
         naver_temp = pd.DataFrame([restaurant_id_list, cafeName_list, addr_list, cafe_url_list], index=naver_res.columns).T
         naver_res = pd.concat([naver_res, naver_temp])
-        naver_res.to_excel('./naver_crawling2.xlsx', engine='openpyxl')
+        naver_res.to_excel('./naver_crawling.xlsx', engine='openpyxl')
 
     while True:  # 무한 루프
         time.sleep(2)  # 페이지가 완전히 로드될 때까지 대기
@@ -139,8 +139,8 @@ def cafe() :
         if not go_to_next_page():  # 다음 페이지로 이동 실패한 경우 루프 종료
             break
 
-    excel_file = 'naver_crawling2.xlsx'  #xlsx 파일 불러와서
-    csv_file = 'naver_crawling2.csv'     #csv 파일 변환
+    excel_file = 'naver_crawling.xlsx'  #xlsx 파일 불러와서
+    csv_file = 'naver_crawling.csv'     #csv 파일 변환
 
     df = pd.read_excel(excel_file)
 
@@ -156,7 +156,7 @@ def img() :
     list_sheet.append(['cafeNumber','cafeImg'])
 
     # 각각의 카페의 고유 번호 csv에서 가져오기
-    csv_file = r'C:\Users\djdj4\vscode\capstone\크롤링, API\naver_cafe3.csv'
+    csv_file = r'C:\capstone\크롤링, API\naver_cafe.csv'
     data = pd.read_csv(csv_file)
 
     try:
@@ -208,11 +208,11 @@ def img() :
     finally:
         driver.quit()
         # Save the file
-        file_name = './naver_img3.xlsx'
+        file_name = './naver_img.xlsx'
         xlsx.save(file_name)
 
-    excel_file = 'naver_img3.xlsx'  #xlsx 파일 불러와서
-    csv_file = 'naver_img3.csv'     #csv 파일 변환
+    excel_file = 'naver_img.xlsx'  #xlsx 파일 불러와서
+    csv_file = 'naver_img.csv'     #csv 파일 변환
 
     df = pd.read_excel(excel_file)
 
@@ -231,7 +231,7 @@ def review() :
     list_sheet.append(['cafeNumber','nickName', 'nameImg', 'date', 'revisit', 'reviewImg'])
 
     # 각각의 카페의 고유 번호 csv에서 가져오기
-    csv_file = r'C:\Users\djdj4\vscode\capstone\크롤링, API\naver_cafe3.csv'
+    csv_file = r'C:\capstone\크롤링, API\naver_cafe.csv'
     data = pd.read_csv(csv_file)
 
     try:
@@ -324,11 +324,11 @@ def review() :
     finally:
         driver.quit()
         # Save the file
-        file_name = './naver_review3.xlsx'
+        file_name = './naver_review.xlsx'
         xlsx.save(file_name)
 
-    excel_file = 'naver_review3.xlsx'  #xlsx 파일 불러와서
-    csv_file = 'naver_review3.csv'     #csv 파일 변환
+    excel_file = 'naver_review.xlsx'  #xlsx 파일 불러와서
+    csv_file = 'naver_review.csv'     #csv 파일 변환
 
     df = pd.read_excel(excel_file)
 
@@ -339,4 +339,4 @@ def review() :
 
 #cafe()
 #img()
-review()
+#review()

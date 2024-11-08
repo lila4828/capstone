@@ -23,10 +23,10 @@ xlsx = Workbook()
 list_sheet = xlsx.active
 list_sheet.append(['cafeNumber','cafeImg'])
 
-path = r"C:\Users\djdj4\vscode\capstone"
+path = r"C:\capstone\크롤링, API"
 
 # 각각의 카페의 고유 번호 csv에서 가져오기
-csv_file = r'C:\Users\djdj4\vscode\capstone\크롤링, API\naver_cafe3.csv'
+csv_file = r'C:\capstone\크롤링, API\naver_cafe.csv'
 data = pd.read_csv(csv_file)
 
 try:
@@ -80,12 +80,12 @@ try:
 finally:
     driver.quit()
     # Save the file
-    file_name = './naver_img3.xlsx'
+    file_name = './naver_img.xlsx'
     xlsx.save(file_name)
 
 
-excel_file = 'naver_img3.xlsx'  #xlsx 파일 불러와서
-csv_file = 'naver_img3.csv'     #csv 파일 변환
+excel_file = 'naver_img.xlsx'  #xlsx 파일 불러와서
+csv_file = 'naver_img.csv'     #csv 파일 변환
 
 df = pd.read_excel(excel_file)
 
