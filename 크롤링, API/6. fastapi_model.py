@@ -130,7 +130,7 @@ async def get_cafe_user(search:str, lat: float, lon: float):
 async def get_cafe_user(search:str):
 
     query_dsl = {"match": {"cafeTag": search}}
-
+ 
     res = es.search(index=index_name, query=query_dsl, size=50,
                     filter_path=["hits.total,hits.hits._score",
                                  "hits.hits._source.cafeNumber",    # 카페 번호
@@ -382,16 +382,13 @@ def cafe_tag_search(img_path):
     return tags_str
 
 
-@app.get("/get_cafe_img_user/")                    # 태그에 맞는 카페 정보 가져온다. - input : 사용자 입력
-async def get_cafe_img_user(img_path:str):
-    path = r"C:\capstone\userImg\1.jpg"
+@app.get("/get_cafe_img_user/")                    # 이미지에 맞는 카페 정보 가져온다. - input : 사용자 이미지 위치
+async def get_cafe_img_user(img_name:str):
+    path = r"C:\capstone\userImg\\" + str(img_name) + '.jpg'   # 이미지 경로
 
-    #Test path
+    #태그 가져오기
     Tag = cafe_tag_search(path)
     
-    #real path
-    #Tag = cafe_tag_search(img_path)
-
     query_dsl = {"match": {"cafeTag": Tag}}
     res = es.search(index=index_name, query=query_dsl, size=50,
                     filter_path=["hits.total,hits.hits._score",
