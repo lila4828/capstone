@@ -135,10 +135,6 @@ def add_cafe_images():
 
         return response.text  # 또는 다른 값으로 변경 가능
 
-#cafe_info_save()
-#add_cafe_images()
-#cafe_review_save()
-
 #--------------------------------------------------------------------------------------------------------------------------
 
 import torch
@@ -256,7 +252,7 @@ def cafe_tag_save():
 
         for row in reader:
             cafeNum = row['카페 번호']
-            url = f'http://localhost:8080/get_cafe_images/?cafe_number={cafeNum}'
+            url = f'http://localhost:8000/get_cafe_images/?cafe_number={cafeNum}'
 
             try:
                 response = requests.get(url)
@@ -309,7 +305,7 @@ def cafe_tag_save():
                 unique_tags = list(set(all_tags))
 
                 if unique_tags:
-                    post_url = f'http://localhost:8080/cafe/tags/{cafeNum}'
+                    post_url = f'http://localhost:8000/cafe/tags/{cafeNum}'
                     try:
                         response = requests.post(post_url, json=unique_tags)
                         response.raise_for_status()
@@ -320,5 +316,8 @@ def cafe_tag_save():
                 logging.info(f"카페 {cafeNum}의 이미지는 '카페'로 분류된 이미지가 없어서 태그를 전송하지 않았습니다.")
 
 
-# 태그 저장 기능 실행
-# cafe_tag_save()  # 실제 실행하려면 주석을 해제하세요.
+# 저장 기능 실행
+#cafe_info_save()
+#add_cafe_images()
+#cafe_review_save()
+#cafe_tag_save()
