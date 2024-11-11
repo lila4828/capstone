@@ -71,6 +71,10 @@ try:
             bs = BeautifulSoup(html, 'lxml')
             reviews = bs.select('li.owAeM')
 
+            print(f"Number of reviews found: {len(reviews)}")
+            print(reviews)  # 리뷰 내용 출력 (디버깅용)
+            # reviews자체가 안가져와짐 수정 필요
+            
             for r in reviews:
                 nickName = r.select_one('div > div.RKXdJ > a.j1rOp > div.qgLL3 > span')                         # 리뷰 사용자
                 nameImg = r.select_one('div > div.RKXdJ > a.RJ26d > div > img')                                 # 리뷰 사용자 사진
@@ -110,7 +114,7 @@ try:
                         reviewImgPath = ''
 
                 time.sleep(0.06)
-
+                
                 list_sheet.append([value, nickName, nameImgSrc, date, revisit, reviewImgSrc]) 
                 time.sleep(0.06)
             

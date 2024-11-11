@@ -44,7 +44,7 @@ class CafeInfo(BaseModel):      # 카페 입력 데이터
     review: Optional[List[Review]] = []         # 리뷰 리스트들
     cafeTag: Optional[List[str]] = []           # 형용사들
 
-index_name = "cafe"
+index_name = "cafe2"
 
 @app.get("/get_cafe_info/")         # 카페 정보를 가져온다. - input : 카페 번호
 async def get_cafe_info(cafeNum:int):
@@ -267,57 +267,76 @@ if __name__ == "__main__":
 #--------------------------------------------------------------------------------------------------------
 
 import torch
-import requests
+from torch import nn
 from PIL import Image
 from torchvision import models, transforms
+import logging
 from urllib.error import HTTPError
+import torch.optim as optim
+from tensorflow.keras.models import load_model, model_from_json
 
 # 클래스 레이블 및 번역
-classLabels = ["study", "date", "time","meeting","emotional","modern","cozy","nature_freindly", "takeout", "retro"]
+classLabels = ["study", "date", "time", "meeting", "emotional", "modern", "cozy", "nature_friendly", "takeout", "retro"]
 label_mapping = {
-    "study" : "공부", 
-    "date" : "소개팅", 
-    "time" : "시간",
-    "meeting" : "회의",
-    "emotional" : "감성",
-    "modern" : "현대",
-    "cozy" : "포근",
-    "nature_freindly" : "자연친화",
-    "takeout" : "미니멀",
+    "study": "공부", 
+    "date": "소개팅", 
+    "time": "시간",
+    "meeting": "회의",
+    "emotional": "감성",
+    "modern": "현대",
+    "cozy": "포근",
+    "nature_friendly": "자연친화",
+    "takeout": "미니멀",
     "retro": "레트로"
 }
 
 # 디바이스 설정
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# 카페 내부 분류 모델 로드
-import warnings
-from tensorflow.keras.models import load_model, model_from_json
-
+# 카페 내부 분류 모델 로드 (Keras 모델)
 try:
-    # architecture and weights from HDF5
     cafe_ox_model = load_model('model.h5')
+    logging.info("HDF5 카페 내부 분류 모델 로드 성공")
 except Exception as e:
-    warnings.warn(f"HDF5 모델 로드 실패: {e}")
+    logging.error(f"HDF5 카페 내부 분류 모델 로드 실패: {e}")
 
-try:
-    # architecture from JSON, weights from HDF5
-    with open('architecture.json') as f:
-        cafe_ox_model = model_from_json(f.read())
-    cafe_ox_model.load_weights('weights.h5')
-except Exception as e:
-    warnings.warn(f"JSON 아키텍처 또는 HDF5 가중치 로드 실패: {e}")
-
-# 카페 분위기 분류 모델 로드
-model = models.resnet50(pretrained=True)
+# 카페 분위기 분류 모델 로드 (PyTorch 모델)
+model = models.resnet50(weights='IMAGENET1K_V1')  # Load the pretrained model
 num_features = model.fc.in_features
-model.fc = torch.nn.Linear(num_features, len(classLabels))  # 출력층 수정
-model.load_state_dict(torch.load("./LatestCheckpoint.pt")['model_state_dict'])
-model.eval()  # 모델을 평가 모드로 설정
+print(num_features)
 
-# 이미지 전처리
+def create_head(num_features, number_classes, dropout_prob=0.5, activation_func=nn.ReLU):
+    features_lst = [num_features, num_features//2, num_features//4]
+    layers = []
+    for in_f, out_f in zip(features_lst[:-1], features_lst[1:]):
+        layers.append(nn.Linear(in_f, out_f))
+        layers.append(activation_func())
+        layers.append(nn.BatchNorm1d(out_f))
+        if dropout_prob != 0: layers.append(nn.Dropout(dropout_prob))
+    layers.append(nn.Linear(features_lst[-1], number_classes))
+    return nn.Sequential(*layers)
+
+model = model.to(device)
+top_head = create_head(num_features, len(classLabels)) 
+top_head = top_head.to(device)
+model.fc = top_head
+
+# 모델 바닥 일부 freezing
+for name, child in model.named_children():
+    if name in ['conv1', 'bn1', 'relu', 'maxpool', 'layer1', 'layer2', 'layer3']:
+        for param in child.parameters():
+            param.requires_grad = False
+    else:
+        break
+
+# 모델 로드 (PyTorch 체크포인트)
+checkpoint = torch.load("./LatestCheckpoint.pt", map_location=torch.device('cpu'), weights_only=True)
+model.load_state_dict(checkpoint['model_state_dict'])
+optimizer = optim.Adam(model.parameters(), lr=0.001)
+
+# 이미지 전처리 함수
 def process_image(image_path):
-    transform = transforms.Compose([
+    transform = transforms.Compose([ 
         transforms.Resize((224, 224)),
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
@@ -326,18 +345,22 @@ def process_image(image_path):
     img_tensor = transform(img).unsqueeze(0).to(device)
     return img_tensor
 
-# 카페 예측 함수
+# 카페 내부 분류 예측 함수 (PyTorch 텐서를 Keras 모델에 맞게 변환)
 def predict_cafe(image_path):
     img_tensor = process_image(image_path)
     
+    # PyTorch 텐서를 Keras에 맞게 차원 변환
+    img_tensor_keras = img_tensor.permute(0, 2, 3, 1).cpu().numpy()  # (1, 224, 224, 3)
+    
+    # Keras 모델 예측
     with torch.no_grad():
-        output = cafe_ox_model(img_tensor)
-        pred_probs = torch.sigmoid(output)
+        output = cafe_ox_model.predict(img_tensor_keras)  # Keras 모델에 입력
+        pred_probs = torch.sigmoid(torch.from_numpy(output))  # 확률 계산
     
     predicted_label = "Cafe" if pred_probs[0][0] > 0.8 else "Non-Cafe"
     return predicted_label
 
-# 다중 레이블 예측 함수
+# 카페 분위기 예측 함수
 def predict_cafe_list(image_path):
     img_tensor = process_image(image_path)
     
@@ -345,20 +368,15 @@ def predict_cafe_list(image_path):
         output = model(img_tensor)
         softmax = torch.nn.Softmax(dim=1)
         probs = softmax(output)  # 각 클래스의 확률
-
-        # 확률 값과 클래스 인덱스를 함께 반환
-        prob_values, class_indices = torch.sort(probs, descending=True)  # 확률 값 기준으로 내림차순 정렬
-
-        predicted_labels = []
+        prob_values, class_indices = torch.sort(probs, descending=True)
         
-        # 임계값을 넘는 클래스들만 선택
+        predicted_labels = []
         for prob, idx in zip(prob_values[0], class_indices[0]):
             if prob >= 0.8:
                 predicted_labels.append(classLabels[idx])
             else:
-                break  # 확률이 임계값 이하인 경우 더 이상 선택하지 않음
-    
-    return predicted_labels
+                break
+    return predicted_labels, prob_values[0].tolist()
 
 # 태그 번역
 def translate_label(labels):
@@ -384,7 +402,8 @@ def cafe_tag_search(img_path):
 
 @app.get("/get_cafe_img_user/")                    # 이미지에 맞는 카페 정보 가져온다. - input : 사용자 이미지 위치
 async def get_cafe_img_user(img_name:str):
-    path = r"C:\capstone\userImg\\" + str(img_name) + '.jpg'   # 이미지 경로
+    #path = r"C:\capstone\userImg\\" + str(img_name) + '.jpg'   # 이미지 경로
+    path = r"C:\capstone\userImg\\1.jpg"  # 이미지 경로
 
     #태그 가져오기
     Tag = cafe_tag_search(path)

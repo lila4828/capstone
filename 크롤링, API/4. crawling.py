@@ -269,6 +269,7 @@ def review() :
                 bs = BeautifulSoup(html, 'lxml')
                 reviews = bs.select('li.owAeM')
 
+                # 여기 select 부분이 문제가 생긴듯
                 for r in reviews:
                     nickName = r.select_one('div > div.RKXdJ > a.j1rOp > div.qgLL3 > span')                         # 리뷰 사용자
                     nameImg = r.select_one('div > div.RKXdJ > a.RJ26d > div > img')                                 # 리뷰 사용자 사진
@@ -339,4 +340,4 @@ def review() :
 
 #cafe()
 #img()
-#review()
+review()
