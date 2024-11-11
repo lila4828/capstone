@@ -188,8 +188,8 @@ def cafe_tag_save():
 
                 # 2개 이미지까지 다운로드 후 예측 시작
                 if len(cafe_images) >= 1:  # 최소 1개 이상 "카페"로 분류되면 예측
-                    if len(cafe_images) == 2:
-                        break  # 2개의 이미지를 다운로드하면 멈춤
+                    if len(cafe_images) == 5:
+                        break  # 5개의 이미지를 다운로드하면 멈춤
 
             # "카페"로 분류된 이미지가 1개 이상일 경우에만 태그 예측 후 서버에 전송
             if len(cafe_images) >= 1:
@@ -198,12 +198,12 @@ def cafe_tag_save():
                     labels, probs = predict_cafe_list(img_path)
                     translated_tags = translate_label(labels)
                     all_tags.extend(translated_tags)
-                print(all_tags)
 
-                # 중복 제거
+                # 중복 제거 및 빈 값 필터링
                 unique_tags = list(set(all_tags))
+                unique_tags = [tag for tag in unique_tags if tag]  # 빈 값은 제외
+
                 if unique_tags:
-                    """
                     post_url = f'http://localhost:8000/cafe/tags/{cafeNum}'
                     try:
                         response = requests.post(post_url, json=unique_tags)
@@ -211,10 +211,9 @@ def cafe_tag_save():
                         logging.info(f"카페 {cafeNum}의 태그가 성공적으로 전송되었습니다.")
                     except requests.exceptions.RequestException as e:
                         logging.error(f"카페 {cafeNum}의 태그 전송 실패: {e}")
-                    """
             else:
                 logging.info(f"카페 {cafeNum}의 이미지는 '카페'로 분류된 이미지가 없어서 태그를 전송하지 않았습니다.")
-
+                
 # 실행
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)

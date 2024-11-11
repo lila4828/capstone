@@ -4,8 +4,173 @@ import uvicorn
 from elasticsearch import Elasticsearch
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+import torch
+from torch import nn
+from PIL import Image
+from torchvision import models, transforms
+import logging
+from urllib.error import HTTPError
+import torch.optim as optim
+import warnings
+import numpy as np
+from tensorflow.keras.models import load_model, model_from_json
+from keras.applications.resnet50 import preprocess_input
 
 app = FastAPI()
+
+# 클래스 레이블 및 번역
+classLabels = ["study", "date", "time", "meeting", "emotional", "modern", "cozy", "nature_friendly", "takeout", "retro"]
+label_mapping = {
+    "study": "공부", 
+    "date": "소개팅", 
+    "time": "시간",
+    "meeting": "회의",
+    "emotional": "감성",
+    "modern": "현대",
+    "cozy": "포근",
+    "nature_friendly": "자연친화",
+    "takeout": "미니멀",
+    "retro": "레트로"
+}
+
+# 디바이스 설정
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+# 모델 로딩 함수
+def load_models():
+    global cafe_ox_model, model
+    try:
+        # Keras 모델 로드
+        cafe_ox_model = load_model('model.h5')
+    except Exception as e:
+        warnings.warn(f"에러 HDF5: {e}")
+    try:
+        # architecture from JSON, weights from HDF5
+        with open('architecture.json') as f:
+            cafe_ox_model = model_from_json(f.read())
+        cafe_ox_model.load_weights('weights.h5')
+    except Exception as e:
+        warnings.warn(f"HDF5 에러: {e}")
+
+    # PyTorch 모델 로드 (ResNet50)
+    model = models.resnet50(weights='IMAGENET1K_V1')  # Load the pretrained model
+    num_features = model.fc.in_features
+
+    def create_head(num_features, number_classes, dropout_prob=0.5, activation_func=nn.ReLU):
+        features_lst = [num_features, num_features // 2, num_features // 4]
+        layers = []
+        for in_f, out_f in zip(features_lst[:-1], features_lst[1:]):
+            layers.append(nn.Linear(in_f, out_f))
+            layers.append(activation_func())
+            layers.append(nn.BatchNorm1d(out_f))
+            if dropout_prob != 0:
+                layers.append(nn.Dropout(dropout_prob))
+        layers.append(nn.Linear(features_lst[-1], number_classes))
+        return nn.Sequential(*layers)
+
+    model = model.to(device)
+    top_head = create_head(num_features, len(classLabels)) 
+    top_head = top_head.to(device)
+    model.fc = top_head
+
+    # 모델 바닥 일부 freezing
+    for name, child in model.named_children():
+        if name in ['conv1', 'bn1', 'relu', 'maxpool', 'layer1', 'layer2', 'layer3']:
+            for param in child.parameters():
+                param.requires_grad = False
+        else:
+            break
+
+    # 모델 로드 (PyTorch 체크포인트)
+    checkpoint = torch.load("./LatestCheckpoint.pt", map_location=torch.device('cpu'), weights_only=True)
+    model.load_state_dict(checkpoint['model_state_dict'])
+    model.eval()
+
+# 이미지 전처리 함수
+def process_image(image_path):
+    try:
+        img = Image.open(image_path).convert('RGB')  # 이미지가 RGB로 열리는지 확인
+        transform = transforms.Compose([
+            transforms.Resize((224, 224)),  # 모델에 맞는 크기로 리사이징
+            transforms.ToTensor(),  # 텐서로 변환
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])  # 정규화
+        ])
+        img_tensor = transform(img).unsqueeze(0).to(device)  # 배치 차원 추가
+        return img_tensor
+    except Exception as e:
+        logging.error(f"이미지 처리 실패: {e}")
+        return None
+    
+# 카페 내부 분류 예측 함수 (PyTorch 텐서를 Keras 모델에 맞게 변환)
+def predict_cafe(image_path):
+    # 이미지 로드 및 전처리
+    img = Image.open(image_path).resize((224, 224))
+    img_array = preprocess_input(np.array(img)[np.newaxis, :])
+    # 모델 예측
+    pred_probs = cafe_ox_model.predict(img_array)
+    # 예측 결과 해석 파트
+    predicted_label = "Cafe" if pred_probs[0][0] > 0.8 else "Non-Cafe"
+    #카페인지 아닌지
+    return predicted_label
+
+# 카페 분위기 예측 함수
+def predict_cafe_list(image_path):
+    img_tensor = process_image(image_path)
+    
+    model.eval()
+
+    with torch.no_grad():
+        output = model(img_tensor)
+        softmax = torch.nn.Softmax(dim=1)
+        probs = softmax(output)  # 각 클래스의 확률
+        prob_values, class_indices = torch.sort(probs, descending=True)
+
+        predicted_labels = []
+        for prob, idx in zip(prob_values[0], class_indices[0]):
+            if prob >= 0.7:
+                predicted_labels.append(classLabels[idx])
+            else:
+                break
+    
+    return predicted_labels, prob_values[0].tolist()
+
+# 태그 번역
+def translate_label(labels):
+    return [label_mapping.get(label, label) for label in labels]
+
+def cafe_tag_search(img_path):
+    tags = []
+    
+    try:
+        # "카페"로 분류되는지 확인
+        predicted_cafe = predict_cafe(img_path)
+        if predicted_cafe == 'Cafe':
+            # 카페를 "분위기"로 분류
+            labels, prob_values = predict_cafe_list(img_path)
+            translated_tags = translate_label(labels)
+            tags.extend(translated_tags)
+        else:
+            tags.append('Non-Cafe')  # 카페가 아닌 경우 추가
+        
+        # 태그가 없을 경우 빈 문자열로 처리
+        if not tags:
+            tags.append('No tags found')  # 기본값 설정
+    except Exception as e:
+        logging.error(f"Error in cafe_tag_search: {e}")
+        tags.append('Error processing image')  # 에러 발생 시 기본 태그
+    
+    # 리스트를 문자열로 변환
+    tags_str = ', '.join(tags)  # 태그를 쉼표로 구분하여 하나의 문자열로 합침
+    return tags_str
+
+
+# 서버 시작 시 모델을 로드하는 이벤트 처리
+def on_startup():
+    load_models()  # 모델 로드 작업
+    print("Models are loaded successfully!")
+
+# add_event_handler로 서버 시작 시 실행할 함수 등록
+app.add_event_handler("startup", on_startup)
 
 origins = ["*"]
 
@@ -261,149 +426,10 @@ async def add_tags(cafe_number: int, tag: List[str]):
     res.append(result)  # 결과를 리스트에 추가
     return res
 
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
-
-#--------------------------------------------------------------------------------------------------------
-
-import torch
-from torch import nn
-from PIL import Image
-from torchvision import models, transforms
-import logging
-from urllib.error import HTTPError
-import torch.optim as optim
-from tensorflow.keras.models import load_model, model_from_json
-
-# 클래스 레이블 및 번역
-classLabels = ["study", "date", "time", "meeting", "emotional", "modern", "cozy", "nature_friendly", "takeout", "retro"]
-label_mapping = {
-    "study": "공부", 
-    "date": "소개팅", 
-    "time": "시간",
-    "meeting": "회의",
-    "emotional": "감성",
-    "modern": "현대",
-    "cozy": "포근",
-    "nature_friendly": "자연친화",
-    "takeout": "미니멀",
-    "retro": "레트로"
-}
-
-# 디바이스 설정
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-# 카페 내부 분류 모델 로드 (Keras 모델)
-try:
-    cafe_ox_model = load_model('model.h5')
-    logging.info("HDF5 카페 내부 분류 모델 로드 성공")
-except Exception as e:
-    logging.error(f"HDF5 카페 내부 분류 모델 로드 실패: {e}")
-
-# 카페 분위기 분류 모델 로드 (PyTorch 모델)
-model = models.resnet50(weights='IMAGENET1K_V1')  # Load the pretrained model
-num_features = model.fc.in_features
-print(num_features)
-
-def create_head(num_features, number_classes, dropout_prob=0.5, activation_func=nn.ReLU):
-    features_lst = [num_features, num_features//2, num_features//4]
-    layers = []
-    for in_f, out_f in zip(features_lst[:-1], features_lst[1:]):
-        layers.append(nn.Linear(in_f, out_f))
-        layers.append(activation_func())
-        layers.append(nn.BatchNorm1d(out_f))
-        if dropout_prob != 0: layers.append(nn.Dropout(dropout_prob))
-    layers.append(nn.Linear(features_lst[-1], number_classes))
-    return nn.Sequential(*layers)
-
-model = model.to(device)
-top_head = create_head(num_features, len(classLabels)) 
-top_head = top_head.to(device)
-model.fc = top_head
-
-# 모델 바닥 일부 freezing
-for name, child in model.named_children():
-    if name in ['conv1', 'bn1', 'relu', 'maxpool', 'layer1', 'layer2', 'layer3']:
-        for param in child.parameters():
-            param.requires_grad = False
-    else:
-        break
-
-# 모델 로드 (PyTorch 체크포인트)
-checkpoint = torch.load("./LatestCheckpoint.pt", map_location=torch.device('cpu'), weights_only=True)
-model.load_state_dict(checkpoint['model_state_dict'])
-optimizer = optim.Adam(model.parameters(), lr=0.001)
-
-# 이미지 전처리 함수
-def process_image(image_path):
-    transform = transforms.Compose([ 
-        transforms.Resize((224, 224)),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-    ])
-    img = Image.open(image_path).convert('RGB')
-    img_tensor = transform(img).unsqueeze(0).to(device)
-    return img_tensor
-
-# 카페 내부 분류 예측 함수 (PyTorch 텐서를 Keras 모델에 맞게 변환)
-def predict_cafe(image_path):
-    img_tensor = process_image(image_path)
-    
-    # PyTorch 텐서를 Keras에 맞게 차원 변환
-    img_tensor_keras = img_tensor.permute(0, 2, 3, 1).cpu().numpy()  # (1, 224, 224, 3)
-    
-    # Keras 모델 예측
-    with torch.no_grad():
-        output = cafe_ox_model.predict(img_tensor_keras)  # Keras 모델에 입력
-        pred_probs = torch.sigmoid(torch.from_numpy(output))  # 확률 계산
-    
-    predicted_label = "Cafe" if pred_probs[0][0] > 0.8 else "Non-Cafe"
-    return predicted_label
-
-# 카페 분위기 예측 함수
-def predict_cafe_list(image_path):
-    img_tensor = process_image(image_path)
-    
-    with torch.no_grad():
-        output = model(img_tensor)
-        softmax = torch.nn.Softmax(dim=1)
-        probs = softmax(output)  # 각 클래스의 확률
-        prob_values, class_indices = torch.sort(probs, descending=True)
-        
-        predicted_labels = []
-        for prob, idx in zip(prob_values[0], class_indices[0]):
-            if prob >= 0.8:
-                predicted_labels.append(classLabels[idx])
-            else:
-                break
-    return predicted_labels, prob_values[0].tolist()
-
-# 태그 번역
-def translate_label(labels):
-    return [label_mapping.get(label, label) for label in labels]
-
-def cafe_tag_search(img_path):
-    tags = []
-    
-    # "카페"로 분류되는지 확인
-    predicted_cafe = predict_cafe(img_path)
-    if predicted_cafe == 'Cafe':
-        # 카페를 "분위기"로 분류
-        labels = predict_cafe_list(img_path)
-        translated_tags = translate_label(labels)
-        tags.extend(translated_tags)
-    else :
-        tags.extend(None)
-    
-    # 리스트를 문자열로 변환
-    tags_str = ', '.join(tags)  # 태그를 쉼표로 구분하여 하나의 문자열로 합침
-    return tags_str
-
-
 @app.get("/get_cafe_img_user/")                    # 이미지에 맞는 카페 정보 가져온다. - input : 사용자 이미지 위치
 async def get_cafe_img_user(img_name:str):
     #path = r"C:\capstone\userImg\\" + str(img_name) + '.jpg'   # 이미지 경로
-    path = r"C:\capstone\userImg\\1.jpg"  # 이미지 경로
+    path = r"C:\capstone\userImg\test.jpg"  # 이미지 경로
 
     #태그 가져오기
     Tag = cafe_tag_search(path)
@@ -418,3 +444,6 @@ async def get_cafe_img_user(img_name:str):
                                  "hits.hits._source.cafeImg"        # 카페 이미지 주소들
                                  ])
     return res
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)
