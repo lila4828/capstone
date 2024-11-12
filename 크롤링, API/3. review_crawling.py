@@ -69,18 +69,18 @@ try:
             time.sleep(20)
             html = driver.page_source
             bs = BeautifulSoup(html, 'lxml')
-            reviews = bs.select('li.owAeM')
-
+            reviews = bs.select('li.place_apply_pui')
+            
             print(f"Number of reviews found: {len(reviews)}")
             print(reviews)  # 리뷰 내용 출력 (디버깅용)
-            # reviews자체가 안가져와짐 수정 필요
+            
             
             for r in reviews:
-                nickName = r.select_one('div > div.RKXdJ > a.j1rOp > div.qgLL3 > span')                         # 리뷰 사용자
-                nameImg = r.select_one('div > div.RKXdJ > a.RJ26d > div > img')                                 # 리뷰 사용자 사진
-                date = r.select_one('div > div.jxc2b > div.D40bm > span:nth-child(1) > span:nth-child(3)')      # 리뷰 날짜
-                revisit = r.select_one('div > div.vg7Fp > a > span.zPfVt')                                      # 리뷰 내용
-                reviewImg = r.select_one('div > div.VAvOk > div > div > div > div > a > img')                   # 리뷰 이미지
+                nickName = r.select_one('div.pui__q2fg8o.pui__A7NplK a.pui__hvyFHZ div.pui__JiVbY3 span.pui__NMi-Dp')   # 리뷰 사용자 
+                nameImg = r.select_one('div.pui__q2fg8o.pui__A7NplK a.pui__sG3Q0N div.pui__thumb img')      # 리뷰 사용자 사진
+                date = r.select_one('div.pui__QztK4Q div.Vk05k div.pui__QKE5Pr span.pui__gfuUIT time')      # 리뷰 날짜
+                revisit = r.select_one('div.pui__HLNvmI span.pui__jhpEyP')                                  # 리뷰 내용
+                reviewImg = r.select_one('div.lazyload-wrapper a.place_thumb img')                          # 리뷰 이미지
 
                 # exception handling
                 # 가져온 리뷰자 이름을 text만 가져와서 저장
@@ -127,12 +127,12 @@ try:
 finally:
     driver.quit()
     # Save the file
-    file_name = './naver_review.xlsx'
+    file_name = './naver_review1.xlsx'
     xlsx.save(file_name)
 
 
-excel_file = 'naver_review.xlsx'  #xlsx 파일 불러와서
-csv_file = 'naver_review.csv'     #csv 파일 변환
+excel_file = 'naver_review1.xlsx'  #xlsx 파일 불러와서
+csv_file = 'naver_review1.csv'     #csv 파일 변환
 
 df = pd.read_excel(excel_file)
 

@@ -428,8 +428,7 @@ async def add_tags(cafe_number: int, tag: List[str]):
 
 @app.get("/get_cafe_img_user/")                    # 이미지에 맞는 카페 정보 가져온다. - input : 사용자 이미지 위치
 async def get_cafe_img_user(img_name:str):
-    #path = r"C:\capstone\userImg\\" + str(img_name) + '.jpg'   # 이미지 경로
-    path = r"C:\capstone\userImg\test.jpg"  # 이미지 경로
+    path = r"C:\capstone\userImg\\" + {img_name} + '.jpg'   # 이미지 경로
 
     #태그 가져오기
     Tag = cafe_tag_search(path)

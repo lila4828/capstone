@@ -7,6 +7,7 @@ import time
 from bs4 import BeautifulSoup
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
+import random
 
 # run webdriver
 driver = webdriver.Chrome()
@@ -18,6 +19,7 @@ action = ActionChains(driver)
 naver_res = pd.DataFrame(columns=['카페 번호','카페 이름','도로명 주소', 'URL'])
 path = r"C:\capstone"
 last_name = ''
+request_count = 0  # 요청 횟수 카운트 변수 추가
 
 def search_iframe():
     driver.switch_to.default_content()
@@ -38,29 +40,29 @@ def entry_iframe():
 
 def chk_names():
     search_iframe()
-    elem = driver.find_elements(By.XPATH, f'//*[@id="_pcmap_list_scroll_container"]/ul/li/div[1]/a[1]/div/div/span[1]')
+    elem = driver.find_elements(By.XPATH, f'//*[@id="_pcmap_list_scroll_container"]/ul/li[1]/div[1]/a[1]/div/div/span[1]')
     name_list = [e.text for e in elem]
 
     return elem, name_list
 
 def crawling_main():
-    global naver_res
+    global naver_res, request_count
     addr_list = []
     cafeName_list = []
     restaurant_id_list = []
     cafe_url_list = []
-    img_list = []
     
     for e in elem:
         e.click()
         entry_iframe()
+        time.sleep(random.uniform(2, 4))  # 추가 대기 시간
         soup = BeautifulSoup(driver.page_source, 'html.parser')
     
         # append data
 
         #카페 이름
         try:
-            cafeName_list.append(soup.select('span.Fc1rA')[0].text)             
+            cafeName_list.append(soup.select('span.TYaxT')[0].text)             
         except:
             cafeName_list.append(float('nan'))
 
@@ -87,11 +89,18 @@ def crawling_main():
         except:
             cafe_url_list.append(float('nan'))
         
-        search_iframe()
+        finally:
+            search_iframe()
+            time.sleep(random.uniform(1, 2))  # 추가 대기 시간
+
+        request_count += 1
+        if request_count % 10 == 0:
+            print("10번의 요청이 완료되었습니다. 10초 동안 대기합니다...")
+            time.sleep(10)  # 10초 대기
     
     naver_temp = pd.DataFrame([restaurant_id_list, cafeName_list, addr_list, cafe_url_list], index=naver_res.columns).T
     naver_res = pd.concat([naver_res, naver_temp])
-    naver_res.to_excel('./naver_crawling.xlsx', engine='openpyxl')
+    naver_res.to_excel('./naver_crawling1.xlsx', engine='openpyxl')
 
 
 def go_to_next_page():
@@ -126,8 +135,8 @@ while True:  # 무한 루프
     if not go_to_next_page():  # 다음 페이지로 이동 실패한 경우 루프 종료
         break
 
-excel_file = 'naver_crawling.xlsx'  #xlsx 파일 불러와서
-csv_file = 'naver_crawling.csv'     #csv 파일 변환
+excel_file = 'naver_crawling1.xlsx'  #xlsx 파일 불러와서
+csv_file = 'naver_crawling1.csv'     #csv 파일 변환
 
 df = pd.read_excel(excel_file)
 

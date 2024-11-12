@@ -8,7 +8,7 @@ import requests
 import urllib.request
 import pandas as pd
 
-# BS4 setting for secondary access
+# BS4 설정을 위한 세션 생성
 session = requests.Session()
 headers = {"User-Agent": "user value"}
 
@@ -18,14 +18,14 @@ retries = Retry(total=5,
 
 session.mount('http://', HTTPAdapter(max_retries=retries))
 
-# New xlsx file
+# 새로운 엑셀 파일 생성
 xlsx = Workbook()
 list_sheet = xlsx.active
 list_sheet.append(['cafeNumber','cafeImg'])
 
 path = r"C:\capstone\크롤링, API"
 
-# 각각의 카페의 고유 번호 csv에서 가져오기
+# 각 카페의 고유 번호를 CSV에서 불러오기
 csv_file = r'C:\capstone\크롤링, API\naver_cafe.csv'
 data = pd.read_csv(csv_file)
 
@@ -37,59 +37,66 @@ try:
         value = row.iloc[0]
         img_list = []
 
-        # url
+        # 첫 번째 URL 설정
         if not pd.isnull(value):
-            url = f'https://m.place.naver.com/restaurant/{int(value)}/photo?entry=ple&reviewSort=recent&filterType=%EB%82%B4%EB%B6%80'
+            first_url = f'https://m.place.naver.com/restaurant/{int(value)}/photo?entry=ple&reviewSort=recent&filterType=%EB%82%B4%EB%B6%80'
         else:
             continue
-        
-        res = driver.get(url)
-        
-        # Start crawling
+
+        # 크롤링 시작 - 첫 번째 URL
         try:
+            driver.get(first_url)  # 첫 번째 URL로 이동
             time.sleep(5)
             html = driver.page_source
             soup = BeautifulSoup(html, 'lxml')
 
-            try:
-                img_element = soup.find_all('div', class_='wzrbN')                         
-                imgs = ''
-            
-                for i, img in enumerate(img_element, 1):  # 두 번째 매개변수를 1로 설정하여 인덱스를 1부터 시작
-                    img_select = img.select_one('a > img')
-                    img_src = img_select.get("src")
-                    
-                    if img_src:
-                        img_path = path + r"\cafeImg\\" + str(value) + '_' + str(i) +'.jpg'   # 이미지 경로 생성
-                        #urllib.request.urlretrieve(img_src, img_path)                 # 이미지 다운로드
-                    else:
-                        img_path = ''
+            img_element = soup.find_all('div', class_='wzrbN')
 
-                    list_sheet.append([value, img_src])
-            except Exception as e:
-                print(e)
+            # 이미지가 없을 경우 두 번째 URL로 이동
+            if not img_element:
+                print(f"첫 번째 URL에 이미지가 없습니다: {first_url}")
+                second_url = f'https://m.place.naver.com/restaurant/{int(value)}/photo'
+                driver.get(second_url)  # 두 번째 URL로 이동
+                time.sleep(5)
+                html = driver.page_source
+                soup = BeautifulSoup(html, 'lxml')
+                img_element = soup.find_all('div', class_='wzrbN')
 
-            time.sleep(0.06)
-            
+                if not img_element:
+                    print(f"이미지가 존재하지 않습니다: {value}")
+                    continue  # 이미지가 없으면 다음 카페로 이동
+
+            # 이미지 처리
+            for i, img in enumerate(img_element, 1):
+                img_select = img.select_one('a > img')
+                img_src = img_select.get("src")
+                
+                if img_src:
+                    img_path = path + r"\cafeImg\\" + str(value) + '_' + str(i) +'.jpg'   # 이미지 경로 생성
+                    # urllib.request.urlretrieve(img_src, img_path)                 # 이미지 다운로드
+                else:
+                    img_path = ''
+
+                list_sheet.append([value, img_src])
         except Exception as e:
             print(e)
-            # Save the file(temp)
+            # 임시 파일 저장
             file_name = 'naver_img_exception_' + str(value) + '.xlsx'
             xlsx.save(file_name)
 
 finally:
     driver.quit()
-    # Save the file
-    file_name = './naver_img.xlsx'
+    # 파일 저장
+    file_name = './naver_img1.xlsx'
     xlsx.save(file_name)
 
 
-excel_file = 'naver_img.xlsx'  #xlsx 파일 불러와서
-csv_file = 'naver_img.csv'     #csv 파일 변환
+excel_file = 'naver_img1.xlsx'  # 엑셀 파일 불러오기
+csv_file = 'naver_img1.csv'     # CSV 파일로 변환
 
 df = pd.read_excel(excel_file)
 
-# DataFrame을 CSV 파일로 저장하기 (UTF-8 인코딩)
+# DataFrame을 CSV 파일로 저장 (UTF-8 인코딩)
 df.to_csv(csv_file, index=False, encoding='utf-8-sig')
 
 print("파일 변환이 끝났습니다.")
