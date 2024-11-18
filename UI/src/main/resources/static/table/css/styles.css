@@ -1,0 +1,146 @@
+.m-p-g{
+  margin-top: 60px;
+}
+.m-p-g__thumbs {
+  display: flex;
+  flex-wrap: wrap; /* 이미지가 한 줄에 다 차면 다음 줄로 넘어가도록 함 */
+  gap: 10px; /* 이미지 사이의 간격 설정 */
+}
+.cafe-tags {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+}
+
+.cafe-tags li {
+  margin-right: 10px; /* 각 태그 사이의 간격 조절 */
+  background-color: yellow;
+  color: black;
+  padding: 5px 10px;
+  border-radius: 10px;
+  font-size: 9px;
+}
+/* 덮개 스타일 */
+.overlay {
+  display: none; /* 처음에는 숨겨져 있음 */
+  position: fixed; /* 고정 위치 */
+  top: 0;
+  left: 0;
+  width: 100%; /* 화면 전체 너비 */
+  height: 100%; /* 화면 전체 높이 */
+  background-color: rgba(0, 0, 0, 0.7); /* 반투명한 검은색 배경 */
+  z-index: 999; /* 다른 요소 위에 표시되도록 함 */
+  overflow-x: auto; /* 가로 스크롤바 표시 */
+}
+/* 확장된 정보를 표시하는 div 스타일 */
+.expanded-info {
+  display: none; /* 처음에는 숨겨져 있음 */
+  position: fixed; /* 고정 위치 */
+  top:80px;
+  left: 1300px; /* 화면 왼쪽에서 중앙으로 */
+  background-color: #f4f4f4; /* 배경색: 연한 회색 */
+  padding: 20px; /* 내부 여백 설정 */
+  width: 500px; /* 너비 설정 */
+  z-index: 1000; /* 다른 요소 위에 표시되도록 함 */
+}
+/* 닫기 버튼 스타일 */
+.close-btn {
+  position: absolute; /* 절대 위치 */
+  top: 80px; /* 상단 여백 */
+  right: 10px; /* 우측 여백 */
+  cursor: pointer; /* 포인터 모양으로 변경하여 클릭 가능하게 함 */
+  font-size: 20px; /* 글자 크기 설정 */
+  color: #333; /* 글자 색상 설정 */
+  width: 30px; /* 너비 설정 */
+  height: 30px; /* 높이 설정 */
+  border-radius: 50%; /* 원형 모양으로 설정 */
+  background-color: #fff; /* 배경색: 흰색 */
+  display: flex; /* 내부 요소들을 정렬하기 위해 Flex 사용 */
+  justify-content: center; /* 수평 중앙 정렬 */
+  align-items: center; /* 수직 중앙 정렬 */
+}
+.image-thumbnails {
+  display: flex;
+  position: fixed;
+  top: 700px;
+  left: 80px;
+  width: calc(100% - 160px); /* 너비 설정 (오른쪽 여백 고려) */
+  max-width: 1100px; /* 최대 너비 설정 */
+  height: 160px;
+  overflow-x: auto; /* 가로 스크롤바 표시 */
+  padding: 5px; /* 여백 추가 */
+  background-color: #5c636a;
+}
+.cafeUrl{
+  float: right;
+}
+.review{
+  padding: 5px;
+  margin-top:10px;
+  border-radius: 10px;
+  background-color: rgb(200, 200, 200);
+}
+.rep{
+  margin-top:10px;
+  height:300px;
+  overflow-y: auto; /* 가로 스크롤바 표시 */
+}
+.repuserpic{
+  border-radius: 100%;
+  height: 50px;
+  width:  50px;
+}
+.repimg{
+  height:100px;
+  width:100px;
+}
+.image-thumbnails img {
+  margin-right: 5px; /* 이미지 간 여백 설정 */
+}
+.image-container{
+  display: flex;
+  position: fixed; /* 고정 위치 */
+  top:80px;
+  left: 80px;
+  width: 1100px; /* 너비 설정 */
+  max-width: 1100px; /* 너비 설정 */
+  height: 600px; /* 높이 설정 */
+  background-color: black;
+}
+.imageL{
+  max-width: 100%; /* 내부 div가 외부 div보다 크지 않도록 합니다. */
+  max-height: 100%;
+  height: auto;
+  width: auto;
+  display: block; /* 이미지를 블록 요소로 표시합니다. */
+  margin: 0 auto; /* 이미지를 가운데 정렬합니다. */
+  object-fit: contain;
+}
+/* 닫기 버튼 호버 효과 */
+.close-btn:hover {
+  color: #000; /* 호버 시 글자 색상 변경 */
+}
+.image {
+  padding: 5px;
+  cursor: pointer; /* 포인터 모양으로 변경하여 클릭 가능하게 함 */
+  text-align: center;
+  background-color: lightgrey;
+}
+.image img {
+  height: 350px; /* 이미지의 높이를 350px로 고정 */
+  width: auto; /* 이미지의 너비를 자동으로 조정하여 비율 유지 */
+  object-fit: cover; /* 이미지를 부모 요소의 크기에 맞게 조절 */
+}
+.navbar {
+  position: fixed; /* 화면 상단에 고정 */
+  top: 0; /* 화면 상단으로부터 0px 떨어져 있도록 설정 */
+  left: 0; /* 화면 왼쪽으로부터 0px 떨어져 있도록 설정 */
+  width: 100%; /* 너비를 화면 전체 너비로 설정 */
+  background-color: #333; /* 배경색: 검은회색 */
+  color: #FFD700; /* 글자색: 진한 노랑색 */
+  padding: 10px 20px; /* 위아래 10px, 좌우 20px의 내부 여백 */
+  font-size: 24px; /* 글자 크기 */
+  font-weight: bold; /* 글자 굵기 */
+  z-index: 1000; /* 다른 요소 위에 표시되도록 z-index 설정 */
+}

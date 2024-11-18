@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Calculator</title>
+</head>
+<body>
+<h1>더하기 계산기</h1>
+<form action="/add-result" method="post">
+    <input type="number" name="num1" placeholder="첫 번째 숫자">
+    <input type="number" name="num2" placeholder="두 번째 숫자">
+    <button type="submit">더하기(서버로 전송)</button>
+</form>
+</body>
+</html>

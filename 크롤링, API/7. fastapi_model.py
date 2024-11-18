@@ -254,7 +254,8 @@ async def get_cafe_user(search:str, lat: float, lon: float):
                                  "hits.hits._source.cafeName",      # 카페 이름
                                  "hits.hits._source.cafeTag",       # 카페 태그
                                  "hits.hits._source.cafePoint",     # 위경도
-                                 "hits.hits._source.cafeImg"        # 카페 이미지 주소들
+                                 "hits.hits._source.cafeImg",        # 카페 이미지 주소들
+                                 "hits.hits._source.cafeAddress"       # 카페 주소들
                                  ])
     return res
 
@@ -302,7 +303,8 @@ async def get_cafe_user(search:str):
                                  "hits.hits._source.cafeName",      # 카페 이름
                                  "hits.hits._source.cafeTag",       # 카페 태그
                                  "hits.hits._source.cafePoint",     # 위경도
-                                 "hits.hits._source.cafeImg"        # 카페 이미지 주소들
+                                 "hits.hits._source.cafeImg",       # 카페 이미지 주소들
+                                 "hits.hits._source.cafeAddress"       # 카페 주소들
                                  ])
     return res
 
@@ -428,7 +430,7 @@ async def add_tags(cafe_number: int, tag: List[str]):
 
 @app.get("/get_cafe_img_user/")                    # 이미지에 맞는 카페 정보 가져온다. - input : 사용자 이미지 위치
 async def get_cafe_img_user(img_name:str):
-    path = r"C:\capstone\userImg\\" + {img_name}   # 이미지 이름
+    path = r"C:\capstone\userImg\\" + img_name   # 이미지 이름
 
     #태그 가져오기
     Tag = cafe_tag_search(path)
