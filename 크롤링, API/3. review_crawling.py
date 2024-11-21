@@ -75,7 +75,7 @@ try:
                 nickName = r.select_one('div.pui__q2fg8o.pui__A7NplK a.pui__hvyFHZ div.pui__JiVbY3 span.pui__NMi-Dp')   # 리뷰 사용자 
                 nameImg = r.select_one('div.pui__q2fg8o.pui__A7NplK a.pui__sG3Q0N div.pui__thumb img')      # 리뷰 사용자 사진
                 date = r.select_one('div.pui__QztK4Q div.Vk05k div.pui__QKE5Pr span.pui__gfuUIT time')      # 리뷰 날짜
-                revisit = r.select_one('div.pui__HLNvmI span.pui__jhpEyP')                                  # 리뷰 내용
+                revisit = r.select_one('a.pui__xtsQN-')                                                     # 리뷰 내용
                 reviewImg = r.select_one('div.lazyload-wrapper a.place_thumb img')                          # 리뷰 이미지
 
                 # exception handling
@@ -97,7 +97,7 @@ try:
                 date = date.text if date else ''
 
                 # 리뷰 글자 text 가져와 저장
-                revisit = revisit.text if revisit else ''
+                revisit = revisit.get_text(separator='\n').strip() if revisit else ''
 
                 # 가져온 리뷰 사진의 url에서 다운받아 저장
                 reviewImgSrc = ''

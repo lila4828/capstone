@@ -308,6 +308,22 @@ async def get_cafe_user(search:str):
                                  ])
     return res
 
+@app.get("/get_cafe_user_name/")                    # 이름으로 카페 정보 가져온다. - input : 사용자 입력
+async def get_cafe_user_name(search:str):
+
+    query_dsl = {"match": {"cafeName": search}}
+ 
+    res = es.search(index=index_name, query=query_dsl, size=10,
+                    filter_path=["hits.total,hits.hits._score",
+                                 "hits.hits._source.cafeNumber",    # 카페 번호
+                                 "hits.hits._source.cafeName",      # 카페 이름
+                                 "hits.hits._source.cafeTag",       # 카페 태그
+                                 "hits.hits._source.cafePoint",     # 위경도
+                                 "hits.hits._source.cafeImg",        # 카페 이미지 주소들
+                                 "hits.hits._source.cafeAddress"       # 카페 주소들
+                                 ])
+    return res
+
 @app.get("/get_cafe_images/")          # 카페 이미지를 가져온다. - input : 카페 번호
 async def get_cafe_images(cafe_number: int):
     # 카페 번호를 기준으로 해당 카페의 문서를 Elasticsearch에서 가져옴
