@@ -68,7 +68,35 @@
     // API 엔드포인트
     var searchValue = document.getElementById('searchValue').value;
     //const apiUrl = 'http://localhost:8000/get_cafe_list/';
-    var apiUrl = 'http://localhost:8000/get_cafe_user/?search=' + searchValue;
+    var apiUrl = 'http://localhost:8000/get_combined_cafe_info/?search=' + searchValue;
+    var apipoint = 'http://localhost:8000/get_cafe_point/?search=' + searchValue+'&lat='+lat+'&lon='+lon;
+    if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        lat = position.coords.latitude;
+                        lon = position.coords.longitude;
+                        console.log(lat);
+                        console.log(lon);
+                    },
+                    (error) => {
+                        switch (error.code) {
+                            case error.PERMISSION_DENIED:
+                                locationElement.textContent = "사용자가 위치 권한을 거부했습니다.";
+                                break;
+                            case error.POSITION_UNAVAILABLE:
+                                locationElement.textContent = "위치 정보를 사용할 수 없습니다.";
+                                break;
+                            case error.TIMEOUT:
+                                locationElement.textContent = "위치 요청 시간이 초과되었습니다.";
+                                break;
+                            default:
+                                locationElement.textContent = "알 수 없는 오류가 발생했습니다.";
+                        }
+                    }
+                );
+            } else {
+                locationElement.textContent = "이 브라우저는 Geolocation을 지원하지 않습니다.";
+            }
     var apipoint = 'http://localhost:8000/get_cafe_point/?search=' + searchValue+'&lat='+lat+'&lon='+lon;
     console.log(apiUrl);
     let totalCafes;
@@ -302,6 +330,7 @@
             }
         } catch (error) {
             console.error('Error fetching cafe list:', error);
+            alert('설정되지 않은 형용사 입니다. 다른 단어로 시도해 주세요.'); // 팝업 메시지 표시
         }
     }
 
@@ -364,9 +393,8 @@
                 const imageId = imageElement.querySelector('img').id;
                 fetchInfo(imageId);
                 console.log("뜌땨뜌땨"+imageId);
-
-                // API에 검색 요청 보내기 (가정)
-                // 여기서는 간단히 이미지 id를 확장된 정보로 출력하는 것으로 대체합니다.
+                document.getElementById('overlay').style.display = 'block';
+                document.querySelector('.expanded-info').style.display = 'block';
 
             }
         }
@@ -411,10 +439,8 @@
                 const lineBreak = document.createElement('br');
                 imageThumbnailsElement.appendChild(lineBreak);
 
-                var myDiv = document.getElementById("overlay");
-                if (myDiv.style.display === "none") {
-                    map.panTo(new kakao.maps.LatLng(cafeInfo.cafePoint.lat, cafeInfo.cafePoint.lon));
-                }
+                map.panTo(new kakao.maps.LatLng(cafeInfo.cafePoint.lat, cafeInfo.cafePoint.lon));
+                
                 // 지도에 카페 위치 표시
 
                 console.log(cafeInfo.cafePoint.lat);

@@ -324,6 +324,59 @@ async def get_cafe_user_name(search:str):
                                  ])
     return res
 
+@app.get("/get_combined_cafe_info/")  # 새로운 API 엔드포인트
+async def get_combined_cafe_info(search: str):
+    # 첫 번째 검색: 이름으로 검색
+    query_name = {"match": {"cafeName": search}}
+    res_name = es.search(index=index_name, query=query_name, size=10,
+                         filter_path=["hits.total", "hits.hits._score",
+                                      "hits.hits._source.cafeNumber",
+                                      "hits.hits._source.cafeName",
+                                      "hits.hits._source.cafeTag",
+                                      "hits.hits._source.cafePoint",
+                                      "hits.hits._source.cafeImg",
+                                      "hits.hits._source.cafeAddress"])
+
+    # 두 번째 검색: 태그로 검색
+    query_tag = {"match": {"cafeTag": search}}
+    res_tag = es.search(index=index_name, query=query_tag, size=50,
+                        filter_path=["hits.total", "hits.hits._score",
+                                     "hits.hits._source.cafeNumber",
+                                     "hits.hits._source.cafeName",
+                                     "hits.hits._source.cafeTag",
+                                     "hits.hits._source.cafePoint",
+                                     "hits.hits._source.cafeImg",
+                                     "hits.hits._source.cafeAddress"])
+
+    # 기존 형식 유지: 병합된 hits.total과 hits.hits 생성
+    combined_hits = []
+    seen_cafe_numbers = set()
+
+    # 첫 번째 결과 추가
+    for hit in res_name.get("hits", {}).get("hits", []):
+        cafe_number = hit["_source"]["cafeNumber"]
+        if cafe_number not in seen_cafe_numbers:
+            seen_cafe_numbers.add(cafe_number)
+            combined_hits.append(hit)
+
+    # 두 번째 결과 추가 (중복 제거)
+    for hit in res_tag.get("hits", {}).get("hits", []):
+        cafe_number = hit["_source"]["cafeNumber"]
+        if cafe_number not in seen_cafe_numbers:
+            seen_cafe_numbers.add(cafe_number)
+            combined_hits.append(hit)
+
+    # 총 결과 수
+    total_hits = len(combined_hits)
+
+    # 결과 반환
+    return {
+        "hits": {
+            "total": {"value": total_hits},
+            "hits": combined_hits
+        }
+    }
+
 @app.get("/get_cafe_images/")          # 카페 이미지를 가져온다. - input : 카페 번호
 async def get_cafe_images(cafe_number: int):
     # 카페 번호를 기준으로 해당 카페의 문서를 Elasticsearch에서 가져옴
